@@ -1,0 +1,347 @@
+/* =============================================
+   Theme System — CSS Custom Properties
+   Default: Dark theme
+   Light: [data-theme="light"]
+   ============================================= */
+
+/* ===== Dark Theme (Default) ===== */
+:root {
+    /* Core backgrounds */
+    --bg-950: #000000;
+    --bg-900: #050505;
+    --bg-850: #0a0a0a;
+    --bg-800: #111111;
+
+    /* Surfaces */
+    --surface-1: #141414;
+    --surface-2: #1a1a1a;
+    --surface-3: #202020;
+
+    /* Borders & dividers */
+    --border-soft: #262626;
+    --border-strong: #303030;
+
+    /* Text */
+    --text-primary: #ffffff;
+    --text-secondary: #cfcfcf;
+    --text-muted: #9a9a9a;
+    --text-disabled: #6b6b6b;
+
+    /* Interactive */
+    --focus-ring: #ffffff;
+    --hover-overlay: rgba(255, 255, 255, 0.04);
+    --active-overlay: rgba(255, 255, 255, 0.08);
+
+    /* Radius — sharp CRED style */
+    --radius-lg: 6px;
+    --radius-md: 4px;
+    --radius-sm: 3px;
+
+    /* Accent — monochrome */
+    --accent: #ffffff;
+    --accent-hover: #e0e0e0;
+    --accent-active: #cccccc;
+    --accent-on: #000000;
+
+    /* Legacy compatibility aliases */
+    --primary: #ffffff;
+    --primary-dark: #e0e0e0;
+    --primary-light: #ffffff;
+    --success: #ffffff;
+    --warning: #ffffff;
+    --danger: #ffffff;
+    --bg-dark: var(--bg-950);
+    --bg-card: var(--surface-1);
+    --bg-hover: var(--hover-overlay);
+    --border: var(--border-soft);
+    --glass: var(--surface-1);
+    --surface: var(--surface-2);
+    --muted: var(--text-muted);
+    --shadow: none;
+
+    /* Bento box card colors */
+    --bento-yellow: #F5C842;
+    --bento-orange: #E85A4F;
+    --bento-green: #4CAF7A;
+    --bento-white: #ffffff;
+
+    /* Theme-aware rgba values */
+    --overlay-light: rgba(255, 255, 255, 0.04);
+    --overlay-medium: rgba(255, 255, 255, 0.06);
+    --overlay-strong: rgba(255, 255, 255, 0.08);
+    --overlay-extra: rgba(255, 255, 255, 0.12);
+    --overlay-text-dim: rgba(255, 255, 255, 0.5);
+    --overlay-text-medium: rgba(255, 255, 255, 0.6);
+    --overlay-text-bright: rgba(255, 255, 255, 0.7);
+    --overlay-text-strong: rgba(255, 255, 255, 0.85);
+    --overlay-text-full: rgba(255, 255, 255, 0.9);
+    --overlay-text-max: rgba(255, 255, 255, 0.95);
+    --overlay-border-dim: rgba(255, 255, 255, 0.06);
+    --overlay-border-soft: rgba(255, 255, 255, 0.08);
+    --overlay-border-medium: rgba(255, 255, 255, 0.12);
+    --overlay-border-strong: rgba(255, 255, 255, 0.15);
+    --overlay-border-max: rgba(255, 255, 255, 0.3);
+    --overlay-border-highlight: rgba(255, 255, 255, 0.4);
+
+    /* Dark overlays (for hover dimming etc.) */
+    --dark-overlay-strong: rgba(0, 0, 0, 0.45);
+    --dark-overlay-medium: rgba(0, 0, 0, 0.6);
+    --dark-overlay-heavy: rgba(0, 0, 0, 0.7);
+    --dark-overlay-max: rgba(0, 0, 0, 0.75);
+
+    /* Scrollbar */
+    --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+
+    /* Shadows */
+    --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-medium: 0 6px 24px rgba(0, 0, 0, 0.5);
+    --shadow-heavy: 0 -4px 30px rgba(0, 0, 0, 0.5);
+    --shadow-nav-inset: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    /* Nav bar */
+    --nav-bg: rgba(10, 10, 10, 0.35);
+    --nav-inactive: #666;
+
+    /* Checkout bar */
+    --checkout-bg: rgba(26, 26, 26, 0.95);
+
+    /* Cart */
+    --cart-preview-bg: #000;
+    --cart-preview-img-bg: #222;
+    --cart-pdf-bg: #1a1a1a;
+    --cart-pdf-label: #888;
+    --cart-dot-inactive: #444;
+
+    /* Shop closed */
+    --shop-closed-bg: rgba(18, 18, 20, 0.97);
+    --shop-closed-border: rgba(255, 255, 255, 0.05);
+
+    /* Status colors (not theme-dependent) */
+    --status-pending: #fbbf24;
+    --status-paid: #60a5fa;
+    --status-printed: #a78bfa;
+    --status-delivered: #22c55e;
+    --status-archived: #64748b;
+
+    /* Error */
+    --error-color: #ff6b6b;
+    --error-bg: rgba(239, 68, 68, 0.1);
+    --error-border: rgba(239, 68, 68, 0.3);
+    --error-accent: #fca5a5;
+    --error-divider: rgba(239, 68, 68, 0.25);
+
+    /* Check/selection */
+    --check-green: #22c55e;
+
+    /* Loading spinner */
+    --spinner-track: rgba(255, 255, 255, 0.06);
+    --spinner-fill: rgba(255, 255, 255, 0.4);
+
+    /* Price warning */
+    --price-warn-bg: rgba(251, 191, 36, 0.08);
+    --price-warn-color: rgba(251, 191, 36, 0.8);
+    --price-warn-border: rgba(251, 191, 36, 0.12);
+
+    /* PDF thumbnail */
+    --thumb-bg: #1a1a1a;
+    --thumb-check-border: rgba(0, 0, 0, 0.4);
+    --thumb-check-bg: rgba(255, 255, 255, 0.85);
+    --thumb-label-bg: rgba(0, 0, 0, 0.75);
+    --thumb-rotate-bg: rgba(0, 0, 0, 0.7);
+    --thumb-rotate-border: rgba(0, 0, 0, 0.3);
+
+    /* Bento card gradients */
+    --bento-yellow-gradient: linear-gradient(135deg, var(--surface-2) 0%, rgba(245, 200, 66, 0.18) 100%);
+    --bento-yellow-border: rgba(245, 200, 66, 0.45);
+    --bento-orange-gradient: linear-gradient(135deg, var(--surface-2) 0%, rgba(232, 90, 79, 0.18) 100%);
+    --bento-orange-border: rgba(232, 90, 79, 0.45);
+    --bento-green-gradient: linear-gradient(135deg, var(--surface-2) 0%, rgba(76, 175, 122, 0.18) 100%);
+    --bento-green-border: rgba(76, 175, 122, 0.45);
+
+    /* User avatar */
+    --avatar-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    --avatar-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+
+    /* Login page extras */
+    --login-surface-hover: #181818;
+    --login-border-focus: #333333;
+    --login-error: #ff4444;
+    --login-error-bg: rgba(255, 68, 68, 0.08);
+    --login-spinner-track: rgba(0, 0, 0, 0.15);
+    --login-spinner-fill: #000;
+    --login-success-overlay: #000;
+    --login-recommended-bg: #1a1a1a;
+}
+
+
+/* ===== Light Theme ===== */
+[data-theme="light"] {
+    /* Core backgrounds — clean whites */
+    --bg-950: #f8f8f8;
+    --bg-900: #f4f4f4;
+    --bg-850: #f0f0f0;
+    --bg-800: #eaeaea;
+
+    /* Surfaces — subtle card distinction */
+    --surface-1: #ffffff;
+    --surface-2: #f5f5f5;
+    --surface-3: #eeeeee;
+
+    /* Borders & dividers */
+    --border-soft: #e0e0e0;
+    --border-strong: #cccccc;
+
+    /* Text */
+    --text-primary: #1a1a1a;
+    --text-secondary: #4a4a4a;
+    --text-muted: #777777;
+    --text-disabled: #aaaaaa;
+
+    /* Interactive */
+    --focus-ring: #3a3a3a;
+    --hover-overlay: rgba(0, 0, 0, 0.04);
+    --active-overlay: rgba(0, 0, 0, 0.08);
+
+    /* Accent — refined dark grey, not harsh black */
+    --accent: #3a3a3a;
+    --accent-hover: #4a4a4a;
+    --accent-active: #555555;
+    --accent-on: #ffffff;
+
+    /* Legacy compatibility */
+    --primary: #3a3a3a;
+    --primary-dark: #4a4a4a;
+    --primary-light: #3a3a3a;
+    --success: #3a3a3a;
+    --warning: #3a3a3a;
+    --danger: #3a3a3a;
+    --bg-dark: var(--bg-950);
+    --bg-card: var(--surface-1);
+    --bg-hover: var(--hover-overlay);
+    --border: var(--border-soft);
+    --glass: var(--surface-1);
+    --surface: var(--surface-2);
+    --muted: var(--text-muted);
+    --shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+
+    /* Bento box card colors */
+    --bento-yellow: #D4A017;
+    --bento-orange: #C44538;
+    --bento-green: #3A8F62;
+    --bento-white: #1a1a1a;
+
+    /* Theme-aware rgba values — stronger opacity for visibility */
+    --overlay-light: rgba(0, 0, 0, 0.04);
+    --overlay-medium: rgba(0, 0, 0, 0.07);
+    --overlay-strong: rgba(0, 0, 0, 0.10);
+    --overlay-extra: rgba(0, 0, 0, 0.14);
+    --overlay-text-dim: rgba(0, 0, 0, 0.50);
+    --overlay-text-medium: rgba(0, 0, 0, 0.60);
+    --overlay-text-bright: rgba(0, 0, 0, 0.70);
+    --overlay-text-strong: rgba(0, 0, 0, 0.80);
+    --overlay-text-full: rgba(0, 0, 0, 0.88);
+    --overlay-text-max: rgba(0, 0, 0, 0.92);
+    --overlay-border-dim: rgba(0, 0, 0, 0.08);
+    --overlay-border-soft: rgba(0, 0, 0, 0.10);
+    --overlay-border-medium: rgba(0, 0, 0, 0.14);
+    --overlay-border-strong: rgba(0, 0, 0, 0.18);
+    --overlay-border-max: rgba(0, 0, 0, 0.28);
+    --overlay-border-highlight: rgba(0, 0, 0, 0.35);
+
+    /* Dark overlays */
+    --dark-overlay-strong: rgba(0, 0, 0, 0.18);
+    --dark-overlay-medium: rgba(0, 0, 0, 0.30);
+    --dark-overlay-heavy: rgba(0, 0, 0, 0.40);
+    --dark-overlay-max: rgba(0, 0, 0, 0.50);
+
+    /* Scrollbar */
+    --scrollbar-thumb: rgba(0, 0, 0, 0.18);
+
+    /* Shadows — subtle elevation for light mode */
+    --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.10);
+    --shadow-heavy: 0 -2px 16px rgba(0, 0, 0, 0.08);
+    --shadow-nav-inset: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+    /* Nav bar */
+    --nav-bg: rgba(255, 255, 255, 0.80);
+    --nav-inactive: #999;
+
+    /* Checkout bar */
+    --checkout-bg: rgba(255, 255, 255, 0.95);
+
+    /* Cart */
+    --cart-preview-bg: #ffffff;
+    --cart-preview-img-bg: #f0f0f0;
+    --cart-pdf-bg: #fafafa;
+    --cart-pdf-label: #777;
+    --cart-dot-inactive: #ccc;
+
+    /* Shop closed */
+    --shop-closed-bg: rgba(248, 248, 248, 0.97);
+    --shop-closed-border: rgba(0, 0, 0, 0.10);
+
+    /* Error */
+    --error-color: #dc2626;
+    --error-bg: rgba(239, 68, 68, 0.08);
+    --error-border: rgba(239, 68, 68, 0.2);
+    --error-accent: #dc2626;
+    --error-divider: rgba(239, 68, 68, 0.2);
+
+    /* Loading spinner */
+    --spinner-track: rgba(0, 0, 0, 0.10);
+    --spinner-fill: rgba(0, 0, 0, 0.40);
+
+    /* Price warning */
+    --price-warn-bg: rgba(251, 191, 36, 0.12);
+    --price-warn-color: #b45309;
+    --price-warn-border: rgba(251, 191, 36, 0.30);
+
+    /* PDF thumbnail */
+    --thumb-bg: #ffffff;
+    --thumb-check-border: rgba(0, 0, 0, 0.18);
+    --thumb-check-bg: rgba(255, 255, 255, 0.95);
+    --thumb-label-bg: rgba(0, 0, 0, 0.65);
+    --thumb-rotate-bg: rgba(0, 0, 0, 0.60);
+    --thumb-rotate-border: rgba(0, 0, 0, 0.18);
+
+    /* Bento card gradients — more vibrant on light */
+    --bento-yellow-gradient: linear-gradient(135deg, #ffffff 0%, rgba(245, 200, 66, 0.25) 100%);
+    --bento-yellow-border: rgba(212, 160, 23, 0.50);
+    --bento-orange-gradient: linear-gradient(135deg, #ffffff 0%, rgba(232, 90, 79, 0.20) 100%);
+    --bento-orange-border: rgba(196, 69, 56, 0.45);
+    --bento-green-gradient: linear-gradient(135deg, #ffffff 0%, rgba(76, 175, 122, 0.20) 100%);
+    --bento-green-border: rgba(58, 143, 98, 0.45);
+
+    /* User avatar — keep colorful even in light */
+    --avatar-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    --avatar-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+
+    /* Login page extras */
+    --login-surface-hover: #f5f5f5;
+    --login-border-focus: #bbb;
+    --login-error: #dc2626;
+    --login-error-bg: rgba(220, 38, 38, 0.06);
+    --login-spinner-track: rgba(0, 0, 0, 0.12);
+    --login-spinner-fill: #333;
+    --login-success-overlay: #f8f8f8;
+    --login-recommended-bg: #f5f5f5;
+}
+
+/* ===== Circular Reveal — View Transition API ===== */
+/* Remove the default cross-fade animation */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+/* Old view sits behind */
+::view-transition-old(root) {
+    z-index: 1;
+}
+
+/* New view sits on top (clip-path animated via JS) */
+::view-transition-new(root) {
+    z-index: 2;
+}

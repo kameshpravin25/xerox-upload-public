@@ -1,0 +1,46 @@
+{
+  "currency": {
+    "symbol": "₹",
+    "name": "INR",
+    "cents_to_display": 100
+  },
+  "base_prices": {
+    "bw_per_page_cents": 180,
+    "bw_duplex_per_page_cents": 200,
+    "color_per_page_cents": 500,
+    "color_duplex_per_page_cents": 1000
+  },
+  "paper_sizes": {
+    "A4": { "multiplier": 1.0, "label": "A4 (Standard)" },
+    "A3": { "multiplier": 2.0, "label": "A3 (Large)" },
+    "Letter": { "multiplier": 1.0, "label": "Letter" },
+    "Legal": { "multiplier": 1.2, "label": "Legal" }
+  },
+  "duplex": {
+    "enabled": true,
+    "label": "Double-sided"
+  },
+  "binding": {
+    "none": { "price_cents": 0, "label": "No Binding" },
+    "staple": { "price_cents": 100, "label": "Staple" },
+    "spiral": { "price_cents": 500, "label": "Spiral Binding" },
+    "hardcover": { "price_cents": 2000, "label": "Hard Cover" }
+  },
+  "copies": {
+    "min": 1,
+    "max": 100,
+    "bulk_discount": {
+      "threshold": 10,
+      "discount_percent": 10
+    }
+  },
+  "minimum_job_cents": 180,
+  "supported_formats": {
+    "documents": ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp", "txt", "rtf"],
+    "images": ["jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff"],
+    "page_estimation": {
+      "image_pages": 1,
+      "unknown_warning": true
+    }
+  }
+}

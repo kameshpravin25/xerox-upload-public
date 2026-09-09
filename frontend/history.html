@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="/js/security.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - Upload & Print</title>
+    <meta name="description" content="View your print job history">
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/history.css">
+    <script src="/js/theme.js"></script>
+</head>
+
+<body>
+    <div class="page" id="pageContainer">
+        <h1 class="page-title">History</h1>
+
+        <div class="stats-row">
+            <div class="stat-pill">
+                <div class="stat-value" id="totalJobs">—</div>
+                <div class="stat-label">Prints</div>
+            </div>
+            <div class="stat-pill">
+                <div class="stat-value" id="totalSpent">—</div>
+                <div class="stat-label">Spent</div>
+            </div>
+            <div class="stat-pill">
+                <div class="stat-value" id="lastJob">—</div>
+                <div class="stat-label">Last</div>
+            </div>
+        </div>
+
+        <div class="section-label">Recent Prints</div>
+        <div id="jobsList">
+            <div class="loading-state">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('access_token');
+        let user = null;
+
+        try { user = JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { }
+
+        async function initAuth() {
+            if (!token && !user) {
+                try {
+                    const res = await fetch('/api/auth/me');
+                    if (res.ok) {
+                        user = await res.json();
+                        if (user && user.id) {
+                            localStorage.setItem('user', JSON.stringify(user));
+                        } else {
+                            window.location.href = '/login';
+                            return;
+                        }
+                    } else {
+                        window.location.href = '/login';
+                        return;
+                    }
+                } catch (e) {
+                    window.location.href = '/login';
+                    return;
+                }
+            }
+            loadJobs();
+            // Reveal page
+            document.getElementById('pageContainer').classList.add('loaded');
+        }
+
+        async function loadJobs() {
+            const jobsList = document.getElementById('jobsList');
+
+            try {
+                const headers = {};
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+
+                const response = await fetch('/api/user/jobs?limit=50', { headers });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        localStorage.removeItem('access_token');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error('Failed to load jobs');
+                }
+
+                const data = await response.json();
+                const jobs = data.jobs || [];
+
+                // Stats
+                document.getElementById('totalJobs').textContent = data.total || jobs.length;
+
+                const totalSpentCents = data.total_spent_cents || 0;
+                document.getElementById('totalSpent').textContent =
+                    '₹' + (totalSpentCents / 100).toFixed(2);
+
+                if (jobs.length > 0) {
+                    document.getElementById('lastJob').textContent =
+                        formatRelativeTime(new Date(jobs[0].created_at));
+                } else {
+                    document.getElementById('lastJob').textContent = 'None';
+                }
+
+                // Pre-calculate primary tokens for grouped orders
+                const orderMap = {};
+                jobs.forEach(job => {
+                    if (job.order_id) {
+                        if (!orderMap[job.order_id] || job.ticket < orderMap[job.order_id]) {
+                            orderMap[job.order_id] = job.display_ticket || getDisplayTicket(job.ticket);
+                        }
+                    }
+                });
+
+                // Empty state
+                if (jobs.length === 0) {
+                    jobsList.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No prints yet</h3>
+                            <p>Your print history will appear here</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render jobs
+                jobsList.innerHTML = jobs.map(job => {
+                    // Use display_ticket (3-digit) for consistent display with staff dashboard
+                    const displayToken = (job.order_id && orderMap[job.order_id])
+                        ? orderMap[job.order_id]
+                        : (job.display_ticket || getDisplayTicket(job.ticket));
+
+                    const amount = job.client_estimate_cents
+                        ? `₹${(job.client_estimate_cents / 100).toFixed(2)}`
+                        : '';
+
+                    const binding = job.binding && job.binding !== 'none'
+                        ? `<span class="detail-chip">${esc(job.binding)}</span>`
+                        : '';
+
+                    return `
+                        <div class="job-card">
+                            <div class="job-top">
+                                <div class="job-filename">${esc(job.filename)}</div>
+                                <div class="job-amount">${amount}</div>
+                            </div>
+                            <div class="job-details">
+                                <span class="detail-chip ticket">#${displayToken}</span>
+                                <span class="detail-chip">${job.color_mode === 'color' ? 'Color' : 'B&W'}</span>
+                                <span class="detail-chip">${job.duplex ? 'Double' : 'Single'}</span>
+                                <span class="detail-chip">${job.paper_size || 'A4'}</span>
+                                <span class="detail-chip">${job.copies || 1}x</span>
+                                ${binding}
+                                <span class="detail-chip">${formatBytes(job.size_bytes)}</span>
+                            </div>
+                            <div class="job-bottom">
+                                <span class="job-date">${formatDate(job.created_at)}</span>
+                                <span class="status-dot ${job.status}">${formatStatusText(job.status)}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                jobsList.innerHTML = `
+                    <div class="error-state">
+                        <p>${error.message}</p>
+                        <button onclick="loadJobs()">Try Again</button>
+                    </div>
+                `;
+            }
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-IN', {
+                day: 'numeric', month: 'short',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        function formatRelativeTime(date) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const jobDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const diffDays = Math.round((today - jobDay) / 86400000);
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return diffDays + 'd ago';
+            if (diffDays < 30) return Math.floor(diffDays / 7) + 'w ago';
+            return Math.floor(diffDays / 30) + 'mo ago';
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes) return '—';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        function esc(text) {
+            const d = document.createElement('div');
+            d.textContent = text || '';
+            return d.innerHTML;
+        }
+
+        // Extract 3-digit display ticket from full ticket
+        // e.g., '20260203-001' → '001', '20260203-010-2' → '010'
+        function getDisplayTicket(ticket) {
+            if (!ticket) return '—';
+            if (ticket.includes('-')) {
+                const parts = ticket.split('-');
+                return parts.length >= 2 ? parts[1] : parts[0];
+            }
+            return ticket;
+        }
+
+        function formatStatusText(status) {
+            const map = {
+                'pending': 'PENDING',
+                'paid': 'PAID',
+                'printed': 'PRINTED',
+                'downloaded': 'PRINTED',
+                'delivered': 'DONE',
+                'archived': 'ARCHIVED',
+                'cancelled': 'CANCELLED',
+                'refunded': 'REFUNDED',
+                'expired': 'PRINTED'
+            };
+            return map[status] || status.toUpperCase();
+        }
+
+        initAuth();
+    </script>
+
+    <!-- Floating Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item" title="Home">
+            <svg viewBox="0 0 24 24">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+        </a>
+        <a href="/history" class="nav-item active" title="History">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
+            </svg>
+        </a>
+    </nav>
+
+    <script src="/js/swipe-nav.js"></script>
+</body>
+
+</html>

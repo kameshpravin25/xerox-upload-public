@@ -1,0 +1,14 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.xeroxupload.app",
+            "sha256_cert_fingerprints": [
+                "D1:6B:3C:07:5E:61:68:59:01:91:7B:DD:8F:24:1A:E3:A3:B6:D6:0B:FB:8C:D5:97:50:A7:F5:3C:22:A9:B7:09"
+            ]
+        }
+    }
+]

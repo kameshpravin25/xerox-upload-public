@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Upload & Print</title>
+    <meta name="description" content="System administration panel">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #000000;
+            --surface-0: #0a0a0a;
+            --surface-1: #111111;
+            --surface-2: #161616;
+            --surface-3: #1c1c1c;
+            --border: #1e1e1e;
+            --border-hover: #2a2a2a;
+            --text-0: #ffffff;
+            --text-1: #e0e0e0;
+            --text-2: #888888;
+            --text-3: #555555;
+            --accent: #d4d4d4;
+            --green: #00c851;
+            --green-dim: rgba(0, 200, 81, 0.12);
+            --red: #ff4444;
+            --red-dim: rgba(255, 68, 68, 0.10);
+            --yellow: #ffbb33;
+            --yellow-dim: rgba(255, 187, 51, 0.10);
+            --blue: #448aff;
+            --blue-dim: rgba(68, 138, 255, 0.10);
+            --purple: #aa66cc;
+            --purple-dim: rgba(170, 102, 204, 0.10);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 150ms ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-1);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ─── Login Screen ─── */
+        #loginScreen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .login-brand {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .login-brand h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            color: var(--text-0);
+        }
+
+        .login-brand p {
+            font-size: 0.8rem;
+            color: var(--text-3);
+            margin-top: 0.5rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .login-field {
+            margin-bottom: 1rem;
+        }
+
+        .login-field label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-field input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-0);
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color var(--transition);
+        }
+
+        .login-field input:focus {
+            border-color: var(--text-3);
+        }
+
+        .login-field input::placeholder { color: var(--text-3); }
+
+        .login-btn {
+            width: 100%;
+            padding: 0.875rem;
+            margin-top: 0.5rem;
+            background: var(--text-0);
+            color: var(--bg);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity var(--transition);
+            letter-spacing: -0.01em;
+        }
+
+        .login-btn:hover { opacity: 0.9; }
+        .login-btn:active { opacity: 0.8; }
+        .login-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .login-error {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: var(--red);
+            text-align: center;
+            min-height: 1.2em;
+        }
+
+        /* ─── Dashboard ─── */
+        #dashboard { display: none; }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .topbar::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            pointer-events: none;
+        }
+
+        .topbar::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+            pointer-events: none;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .topbar-logo {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-0);
+            letter-spacing: -0.03em;
+        }
+
+        .topbar-divider {
+            width: 1px;
+            height: 16px;
+            background: var(--border);
+        }
+
+        .topbar-env {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .topbar-status {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.72rem;
+            color: var(--text-3);
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .topbar-btn {
+            font-size: 0.72rem;
+            color: var(--text-3);
+            background: none;
+            border: 1px solid var(--border);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all var(--transition);
+        }
+
+        .topbar-btn:hover { color: var(--text-1); border-color: var(--border-hover); }
+
+        /* ─── Nav Tabs ─── */
+        .nav-tabs {
+            display: flex;
+            padding: 0 1.5rem;
+            background: var(--surface-0);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .nav-tabs::-webkit-scrollbar { display: none; }
+
+        .nav-tab {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-3);
+            cursor: pointer;
+            border-bottom: 1.5px solid transparent;
+            transition: all var(--transition);
+            white-space: nowrap;
+            user-select: none;
+            letter-spacing: -0.01em;
+        }
+
+        .nav-tab:hover { color: var(--text-2); }
+
+        .nav-tab.active {
+            color: var(--text-0);
+            border-bottom-color: var(--text-0);
+        }
+
+        .nav-tab .count {
+            margin-left: 0.4rem;
+            font-size: 0.65rem;
+            color: var(--text-3);
+            font-weight: 400;
+        }
+
+        .nav-tab.active .count { color: var(--text-2); }
+
+        /* ─── Content ─── */
+        .content { padding: 1.5rem; max-width: 1480px; margin: 0 auto; }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* ─── Entrance Animation ─── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes countUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes glowPulse { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 20px rgba(0,200,81,0.08); } }
+        @keyframes donutDraw { from { stroke-dashoffset: var(--circumference); } to { stroke-dashoffset: var(--dash-offset); } }
+        @keyframes barGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+        .anim-stagger { opacity: 0; animation: fadeInUp 0.5s cubic-bezier(.22,1,.36,1) forwards; }
+
+        /* ─── Skeleton Loading ─── */
+        .skel {
+            background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease infinite;
+            border-radius: var(--radius);
+        }
+        .skel-line {
+            height: 12px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease infinite;
+        }
+        .skel-metric {
+            border-radius: 20px;
+            padding: 1.5rem;
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease infinite;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .skel-metric .skel-label { width: 60%; height: 10px; margin-bottom: 1rem; }
+        .skel-metric .skel-value { width: 45%; height: 26px; }
+        .skel-metric.span-2 .skel-value { height: 34px; }
+        .skel-chart-wrap {
+            border-radius: var(--radius);
+            padding: 1rem;
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease infinite;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .skel-chart-wrap .skel-chart-header { display: flex; justify-content: space-between; margin-bottom: 0.75rem; }
+        .skel-chart-wrap .skel-chart-title { width: 40%; height: 10px; }
+        .skel-chart-wrap .skel-chart-val { width: 20%; height: 14px; }
+        .skel-chart-wrap .skel-chart-area { width: 100%; height: 140px; border-radius: 8px; opacity: 0.5; }
+        .skel-status-wrap {
+            display: flex; gap: 1rem; align-items: center;
+            padding: 1.5rem;
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease infinite;
+            border-radius: var(--radius);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .skel-donut { width: 160px; height: 160px; border-radius: 50%; flex-shrink: 0; }
+        .skel-status-cards { display: flex; flex-wrap: wrap; gap: 0.5rem; flex: 1; }
+        .skel-status-card { flex: 1 1 80px; height: 60px; border-radius: 10px; }
+
+        #overviewSkeletons { display: none; }
+        #overviewSkeletons.active { display: block; }
+        #overviewContent { display: block; }
+        #overviewContent.hidden { display: none; }
+
+        /* ─── Metric Cards ─── */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: auto;
+            gap: 0.75rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .metric.span-2 { grid-column: span 2; }
+        .metric.span-2 .metric-value { font-size: 2rem; }
+
+        .metric {
+            position: relative;
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            transition: all 0.25s ease;
+            overflow: hidden;
+        }
+
+        .metric:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        @media (max-width: 900px) {
+            .metrics { grid-template-columns: repeat(2, 1fr); }
+            .metric.span-2 { grid-column: span 2; }
+        }
+        @media (max-width: 480px) {
+            .metrics { grid-template-columns: 1fr 1fr; }
+            .metric.span-2 { grid-column: span 2; }
+            .metric.span-2 .metric-value { font-size: 1.5rem; }
+            .metric { padding: 1rem; border-radius: 12px; }
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-1);
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.01em;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-0);
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        .metric-value.green { color: var(--green); }
+        .metric-value.red { color: var(--red); }
+        .metric-value.yellow { color: var(--yellow); }
+        .metric-value.blue { color: var(--blue); }
+        .metric-value.purple { color: var(--purple); }
+
+        .metric-row {
+            display: flex; align-items: flex-end; justify-content: space-between; gap: 0.75rem;
+        }
+
+        .metric-spark {
+            flex-shrink: 0;
+            width: 64px; height: 24px;
+            opacity: 0.6;
+        }
+
+        .metric-trend {
+            display: inline-flex; align-items: center; gap: 0.25rem;
+            margin-top: 0.5rem;
+            font-size: 0.68rem; font-weight: 600;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+        }
+        .metric-trend.up { color: var(--green); background: var(--green-dim); }
+        .metric-trend.down { color: var(--red); background: var(--red-dim); }
+        .metric-trend.neutral { color: var(--text-3); background: rgba(255,255,255,0.04); }
+
+        .metric-sub {
+            margin-top: 0.4rem;
+            font-size: 0.7rem;
+            color: var(--text-3);
+        }
+
+        /* ─── Section Header ─── */
+        .section-header {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .section-header::before {
+            content: '';
+            width: 3px; height: 12px;
+            border-radius: 2px;
+            background: linear-gradient(180deg, var(--green), var(--blue));
+            flex-shrink: 0;
+        }
+
+        /* ─── Status Breakdown (Donut + Grid) ─── */
+        .status-section {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.75rem;
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            transition: border-color var(--transition);
+        }
+        .status-section:hover { border-color: var(--border-hover); }
+
+        .donut-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .donut-center {
+            position: absolute;
+            text-align: center;
+        }
+        .donut-center-value {
+            font-size: 1.5rem; font-weight: 800; color: var(--text-0);
+            letter-spacing: -0.03em; line-height: 1;
+        }
+        .donut-center-label {
+            font-size: 0.6rem; color: var(--text-3); text-transform: uppercase;
+            letter-spacing: 0.06em; margin-top: 0.2rem;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.5rem;
+            align-content: center;
+        }
+
+        .status-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.875rem 1rem;
+            text-align: center;
+            transition: all 0.25s cubic-bezier(.22,1,.36,1);
+            position: relative;
+            overflow: hidden;
+        }
+        .status-card::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0; height: 2px;
+            background: var(--status-color, var(--text-3));
+            opacity: 0.5;
+            transition: opacity 0.25s;
+        }
+        .status-card:hover { transform: translateY(-1px); border-color: var(--border-hover); }
+        .status-card:hover::before { opacity: 1; }
+
+        .status-count {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+
+        .status-name {
+            font-size: 0.6rem;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 0.375rem;
+        }
+
+        @media (max-width: 640px) {
+            .status-section { grid-template-columns: 1fr; }
+            .donut-wrap { margin-bottom: 0.5rem; }
+        }
+
+        /* ─── Table ─── */
+        .table-wrap {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            gap: 1rem;
+        }
+
+        .table-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-0);
+            letter-spacing: -0.01em;
+        }
+
+        .search-input {
+            padding: 0.4rem 0.75rem;
+            background: var(--surface-3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-0);
+            font-size: 0.78rem;
+            font-family: inherit;
+            width: 220px;
+            outline: none;
+            transition: border-color var(--transition);
+        }
+
+        .search-input:focus { border-color: var(--text-3); }
+        .search-input::placeholder { color: var(--text-3); }
+
+        .table-scroll { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th {
+            text-align: left;
+            padding: 0.625rem 1rem;
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-3);
+            background: rgba(255,255,255,0.015);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.625rem 1rem;
+            font-size: 0.78rem;
+            color: var(--text-1);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .mono { font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.72rem; color: var(--text-2); }
+        .val { font-weight: 600; }
+        .val-green { color: var(--green); font-weight: 600; }
+        .val-dim { color: var(--text-3); }
+
+        /* ─── Tags ─── */
+        .tag {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .tag-green { background: var(--green-dim); color: var(--green); }
+        .tag-red { background: var(--red-dim); color: var(--red); }
+        .tag-yellow { background: var(--yellow-dim); color: var(--yellow); }
+        .tag-blue { background: var(--blue-dim); color: var(--blue); }
+        .tag-purple { background: var(--purple-dim); color: var(--purple); }
+        .tag-dim { background: rgba(255,255,255,0.04); color: var(--text-3); }
+
+        /* ─── Filter Chips ─── */
+        .chips {
+            display: flex;
+            gap: 0.375rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .chip {
+            padding: 0.35rem 0.75rem;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--text-2);
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all var(--transition);
+            letter-spacing: -0.01em;
+        }
+
+        .chip:hover { border-color: var(--border-hover); color: var(--text-1); }
+
+        .chip.active {
+            background: var(--text-0);
+            border-color: var(--text-0);
+            color: var(--bg);
+            font-weight: 600;
+        }
+
+        /* ─── Pagination ─── */
+        .paging {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.25rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .paging-info { font-size: 0.72rem; color: var(--text-3); }
+
+        .paging-btns { display: flex; gap: 0.375rem; }
+
+        .paging-btn {
+            padding: 0.3rem 0.65rem;
+            font-size: 0.72rem;
+            background: var(--surface-3);
+            border: 1px solid var(--border);
+            color: var(--text-1);
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all var(--transition);
+        }
+
+        .paging-btn:hover { border-color: var(--border-hover); }
+        .paging-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+        /* ─── Log Viewer ─── */
+        .log-viewer {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .log-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .log-meta { font-size: 0.7rem; color: var(--text-3); display: flex; gap: 1.25rem; }
+
+        .log-body {
+            max-height: 600px;
+            overflow-y: auto;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.72rem;
+            line-height: 1.7;
+        }
+
+        .log-line {
+            padding: 0.25rem 1.25rem;
+            color: var(--text-3);
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            word-break: break-all;
+        }
+
+        .log-line:hover { background: rgba(255,255,255,0.02); }
+        .log-line.err { color: var(--red); background: rgba(255,68,68,0.04); }
+        .log-line.warn { color: var(--yellow); background: rgba(255,187,51,0.03); }
+        .log-line.crit { color: #ff6b6b; background: rgba(255,68,68,0.06); font-weight: 600; }
+        .log-line.info { color: var(--text-2); }
+
+        .log-tab-bar {
+            display: flex;
+            gap: 0;
+        }
+
+        .log-tab {
+            padding: 0.45rem 1rem;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--text-3);
+            cursor: pointer;
+            border-bottom: 1.5px solid transparent;
+            transition: all var(--transition);
+            font-family: inherit;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
+
+        .log-tab:hover { color: var(--text-2); }
+        .log-tab.active { color: var(--text-0); border-bottom-color: var(--text-0); }
+
+        /* ─── Charts ─── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .chart-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            transition: all 0.3s cubic-bezier(.22,1,.36,1);
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .chart-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-2);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .chart-value {
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 160px;
+            display: block;
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            background: rgba(28,28,28,0.95);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--border-hover);
+            border-radius: 8px;
+            padding: 0.4rem 0.7rem;
+            font-size: 0.68rem;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-0);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 100ms;
+            z-index: 50;
+            white-space: nowrap;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+
+        /* ─── Empty / Loading ─── */
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-3);
+            font-size: 0.85rem;
+        }
+
+        .empty-title { font-weight: 600; color: var(--text-2); margin-bottom: 0.25rem; }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid var(--border);
+            border-top-color: var(--text-2);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading { text-align: center; padding: 2.5rem; color: var(--text-3); font-size: 0.8rem; }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 1024px) {
+            .charts-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+        }
+
+        @media (max-width: 768px) {
+            .content { padding: 0.75rem; }
+            .topbar { padding: 0.6rem 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+            .topbar-left { font-size: 0.85rem; }
+            .topbar-right { font-size: 0.7rem; }
+            .nav-tabs { padding: 0 0.75rem; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .nav-tabs::-webkit-scrollbar { display: none; }
+            .nav-tab { white-space: nowrap; padding: 0.6rem 0.65rem; font-size: 0.72rem; flex-shrink: 0; }
+            .metrics { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+            .metric { padding: 0.875rem; }
+            .metric-value { font-size: 1.15rem; }
+            .metric-label { font-size: 0.58rem; }
+            .charts-grid { grid-template-columns: 1fr; }
+            .chart-canvas { height: 120px; }
+            .chart-value { font-size: 0.95rem; }
+            .status-grid { grid-template-columns: repeat(3, 1fr); gap: 0.375rem; }
+            .table-toolbar { flex-direction: column; align-items: flex-start; }
+            .search-input { width: 100%; }
+            .paging { flex-direction: column; gap: 0.5rem; }
+            .section-header { font-size: 0.62rem; }
+            td { padding: 0.5rem 0.65rem; font-size: 0.7rem; }
+            th { padding: 0.5rem 0.65rem; font-size: 0.56rem; }
+        }
+
+        @media (max-width: 480px) {
+            .metrics { grid-template-columns: repeat(2, 1fr); gap: 0.375rem; }
+            .metric { padding: 0.7rem; }
+            .metric-value { font-size: 1rem; }
+            .status-grid { grid-template-columns: repeat(2, 1fr); }
+            .topbar-status { display: none; }
+            .log-toolbar { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .log-meta { font-size: 0.6rem; }
+        }
+
+        /* ─── Scrollbar ─── */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="loginScreen">
+    <div class="login-card">
+        <div class="login-brand">
+            <h1>Upload & Print</h1>
+            <p>Admin Console</p>
+        </div>
+        <form id="loginForm" autocomplete="off">
+            <div class="login-field">
+                <label>Username</label>
+                <input type="text" id="loginUser" placeholder="Enter username" autofocus required>
+            </div>
+            <div class="login-field">
+                <label>Password</label>
+                <input type="password" id="loginPass" placeholder="Enter password" required>
+            </div>
+            <button type="submit" class="login-btn" id="loginBtn">Sign in</button>
+            <div class="login-error" id="loginError"></div>
+        </form>
+    </div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<div id="dashboard">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <span class="topbar-logo">Upload & Print</span>
+            <span class="topbar-divider"></span>
+            <span class="topbar-env">Admin</span>
+        </div>
+        <div class="topbar-right">
+            <span class="topbar-status"><span class="pulse-dot"></span> Live — <span id="lastSync">syncing</span></span>
+            <button class="topbar-btn" onclick="logout()">Sign out</button>
+        </div>
+    </div>
+
+    <!-- Nav Tabs -->
+    <div class="nav-tabs" id="navTabs">
+        <div class="nav-tab active" data-tab="overview">Overview</div>
+        <div class="nav-tab" data-tab="users">Users<span class="count" id="cntUsers"></span></div>
+        <div class="nav-tab" data-tab="payments">Payments<span class="count" id="cntPayments"></span></div>
+        <div class="nav-tab" data-tab="prints">Print Orders<span class="count" id="cntPrints"></span></div>
+        <div class="nav-tab" data-tab="logs">Logs<span class="count" id="cntLogs"></span></div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+        <!-- Overview -->
+        <div class="panel active" id="panel-overview">
+
+            <!-- Skeleton Loading State -->
+            <div id="overviewSkeletons" class="active">
+                <!-- Metrics Skeletons -->
+                <div class="metrics">
+                    <div class="skel-metric"><div class="skel-line skel-label"></div><div class="skel-line skel-value"></div></div>
+                    <div class="skel-metric"><div class="skel-line skel-label"></div><div class="skel-line skel-value"></div></div>
+                    <div class="skel-metric span-2"><div class="skel-line skel-label"></div><div class="skel-line skel-value"></div></div>
+                    <div class="skel-metric"><div class="skel-line skel-label"></div><div class="skel-line skel-value"></div></div>
+                    <div class="skel-metric span-2"><div class="skel-line skel-label"></div><div class="skel-line skel-value"></div></div>
+                    <div class="skel-metric"><div class="skel-line skel-label"></div><div class="skel-line skel-value"></div></div>
+                    <div class="skel-metric"><div class="skel-line skel-label"></div><div class="skel-line skel-value"></div></div>
+                    <div class="skel-metric"><div class="skel-line skel-label"></div><div class="skel-line skel-value"></div></div>
+                </div>
+                <!-- Charts Skeletons -->
+                <div class="skel-line" style="width:180px;height:10px;margin-bottom:0.75rem;margin-top:0.5rem"></div>
+                <div class="charts-grid">
+                    <div class="skel-chart-wrap"><div class="skel-chart-header"><div class="skel-line skel-chart-title"></div><div class="skel-line skel-chart-val"></div></div><div class="skel-line skel-chart-area"></div></div>
+                    <div class="skel-chart-wrap"><div class="skel-chart-header"><div class="skel-line skel-chart-title"></div><div class="skel-line skel-chart-val"></div></div><div class="skel-line skel-chart-area"></div></div>
+                    <div class="skel-chart-wrap"><div class="skel-chart-header"><div class="skel-line skel-chart-title"></div><div class="skel-line skel-chart-val"></div></div><div class="skel-line skel-chart-area"></div></div>
+                </div>
+                <!-- Status Skeletons -->
+                <div class="skel-line" style="width:160px;height:10px;margin:1.25rem 0 0.75rem"></div>
+                <div class="skel-status-wrap">
+                    <div class="skel-line skel-donut"></div>
+                    <div class="skel-status-cards">
+                        <div class="skel-line skel-status-card"></div>
+                        <div class="skel-line skel-status-card"></div>
+                        <div class="skel-line skel-status-card"></div>
+                        <div class="skel-line skel-status-card"></div>
+                        <div class="skel-line skel-status-card"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real Content (hidden until data loads) -->
+            <div id="overviewContent" class="hidden">
+                <div class="metrics" id="metricsGrid"></div>
+                <div class="section-header">Trends — Last 30 Days</div>
+                <div class="charts-grid">
+                    <div class="chart-card" style="position:relative">
+                        <div class="chart-header">
+                            <span class="chart-title">Daily Revenue</span>
+                            <span class="chart-value green" id="chartRevTotal"></span>
+                        </div>
+                        <canvas class="chart-canvas" id="chartRevenue"></canvas>
+                        <div class="chart-tooltip" id="tipRevenue"></div>
+                    </div>
+                    <div class="chart-card" style="position:relative">
+                        <div class="chart-header">
+                            <span class="chart-title">Daily Print Orders</span>
+                            <span class="chart-value" id="chartPrintTotal" style="color:var(--blue)"></span>
+                        </div>
+                        <canvas class="chart-canvas" id="chartPrints"></canvas>
+                        <div class="chart-tooltip" id="tipPrints"></div>
+                    </div>
+                    <div class="chart-card" style="position:relative">
+                        <div class="chart-header">
+                            <span class="chart-title">New Users</span>
+                            <span class="chart-value" id="chartUserTotal" style="color:var(--purple)"></span>
+                        </div>
+                        <canvas class="chart-canvas" id="chartUsers"></canvas>
+                        <div class="chart-tooltip" id="tipUsers"></div>
+                    </div>
+                </div>
+                <div class="section-header">Status Breakdown</div>
+                <div class="status-section">
+                    <div class="donut-wrap">
+                        <svg id="donutChart" width="180" height="180" viewBox="0 0 180 180"></svg>
+                        <div class="donut-center">
+                            <div class="donut-center-value" id="donutTotal">—</div>
+                            <div class="donut-center-label">Total Jobs</div>
+                        </div>
+                    </div>
+                    <div class="status-grid" id="statusGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users -->
+        <div class="panel" id="panel-users">
+            <div class="table-wrap">
+                <div class="table-toolbar">
+                    <span class="table-title">All Users</span>
+                    <input type="text" class="search-input" id="searchUsers" placeholder="Search users...">
+                </div>
+                <div class="table-scroll">
+                    <table><thead><tr>
+                        <th>ID</th><th>Name</th><th>Email</th><th>Auth</th><th>Prints</th><th>Spent</th><th>Joined</th><th>Last Active</th>
+                    </tr></thead><tbody id="tbUsers"><tr><td colspan="8"><div class="loading"><span class="spinner"></span>Loading</div></td></tr></tbody></table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments -->
+        <div class="panel" id="panel-payments">
+            <div class="table-wrap">
+                <div class="table-toolbar">
+                    <span class="table-title">Payment Audit Trail</span>
+                    <input type="text" class="search-input" id="searchPayments" placeholder="Search payments...">
+                </div>
+                <div class="table-scroll">
+                    <table><thead><tr>
+                        <th>Order ID</th><th>Ticket</th><th>Amount</th><th>Status</th><th>Gateway</th><th>Method</th><th>Customer</th><th>Created</th><th>Verified</th>
+                    </tr></thead><tbody id="tbPayments"><tr><td colspan="9"><div class="loading"><span class="spinner"></span>Loading</div></td></tr></tbody></table>
+                </div>
+                <div class="paging" id="pagPayments"></div>
+            </div>
+        </div>
+
+        <!-- Print Orders -->
+        <div class="panel" id="panel-prints">
+            <div class="chips" id="printChips"></div>
+            <div class="table-wrap">
+                <div class="table-toolbar">
+                    <span class="table-title">All Print Orders</span>
+                    <input type="text" class="search-input" id="searchPrints" placeholder="Search by ticket, sender...">
+                </div>
+                <div class="table-scroll">
+                    <table><thead><tr>
+                        <th>Ticket</th><th>Status</th><th>Sender</th><th>File</th><th>Pages</th><th>Config</th><th>Amount</th><th>User</th><th>Created</th>
+                    </tr></thead><tbody id="tbPrints"><tr><td colspan="9"><div class="loading"><span class="spinner"></span>Loading</div></td></tr></tbody></table>
+                </div>
+                <div class="paging" id="pagPrints"></div>
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="panel" id="panel-logs">
+            <div class="log-viewer">
+                <div class="log-toolbar">
+                    <div class="log-tab-bar">
+                        <button class="log-tab active" data-logtype="all" onclick="switchLogTab('all',this)">All Logs</button>
+                        <button class="log-tab" data-logtype="errors" onclick="switchLogTab('errors',this)">Errors Only</button>
+                    </div>
+                    <div class="log-meta">
+                        <span id="logTotal"></span>
+                        <span id="logSize"></span>
+                    </div>
+                </div>
+                <div class="log-body" id="logBody"><div class="loading"><span class="spinner"></span>Loading</div></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// Admin Dashboard
+// ════════════════════════════════════════════════
+
+const S = {
+    tab: 'overview',
+    refreshId: null,
+    refreshMs: 5000,
+    logType: 'all',       // 'all' or 'errors'
+    pPay: 0, limPay: 50,
+    pPrint: 0, limPrint: 50,
+    printFilter: null,
+    cache: {},
+};
+
+// ─── Auth ───
+async function checkSession() {
+    try {
+        const r = await fetch('/api/admin/check');
+        if (r.ok) { showDashboard(); return; }
+    } catch {}
+    showLogin();
+}
+
+function showLogin() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('dashboard').style.display = 'none';
+}
+
+function showDashboard() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadTab(S.tab);
+    startRefresh();
+}
+
+document.getElementById('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('loginError');
+    btn.disabled = true;
+    err.textContent = '';
+    try {
+        const r = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: document.getElementById('loginUser').value,
+                password: document.getElementById('loginPass').value,
+            }),
+        });
+        if (r.ok) { showDashboard(); }
+        else { err.textContent = 'Invalid credentials'; }
+    } catch (ex) {
+        err.textContent = 'Connection error';
+    }
+    btn.disabled = false;
+});
+
+async function logout() {
+    await fetch('/api/admin/logout', { method: 'POST' });
+    stopRefresh();
+    showLogin();
+}
+
+// ─── Tabs ───
+document.getElementById('navTabs').addEventListener('click', e => {
+    const t = e.target.closest('.nav-tab');
+    if (!t) return;
+    switchTab(t.dataset.tab);
+});
+
+function switchTab(id) {
+    S.tab = id;
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `panel-${id}`));
+    loadTab(id);
+}
+
+// ─── Refresh ───
+function startRefresh() { stopRefresh(); S.refreshId = setInterval(() => loadTab(S.tab), S.refreshMs); }
+function stopRefresh() { if (S.refreshId) { clearInterval(S.refreshId); S.refreshId = null; } }
+
+// ─── API ───
+async function api(url) {
+    const r = await fetch(url);
+    if (r.status === 401) { showLogin(); throw new Error('Session expired'); }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+}
+
+async function loadTab(id) {
+    try {
+        switch (id) {
+            case 'overview': await loadOverview(); break;
+            case 'users': await loadUsers(); break;
+            case 'payments': await loadPayments(); break;
+            case 'prints': await loadPrints(); break;
+            case 'logs': await loadLogs(); break;
+        }
+        document.getElementById('lastSync').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch (e) {
+        if (e.message !== 'Session expired') console.error(e);
+    }
+}
+
+// ─── Overview ───
+let _overviewFirstLoad = true;
+async function loadOverview() {
+    const [stats, prints, trends, todayJobs] = await Promise.all([
+        api('/api/admin/stats'),
+        api('/api/admin/jobs?limit=1'),
+        api('/api/admin/trends?days=30'),
+        api('/api/admin/jobs?limit=200'),
+    ]);
+
+    // Compute "Prints Today" client-side to match staff dashboard logic
+    // Staff excludes: draft, created, pending_payment
+    // Staff compares created_at date to today's IST date
+    const excludeStatuses = new Set(['draft', 'created', 'pending_payment']);
+    const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const todayStr = todayIST.getFullYear() + '-' +
+        String(todayIST.getMonth() + 1).padStart(2, '0') + '-' +
+        String(todayIST.getDate()).padStart(2, '0');
+    let computedTodayJobs = 0;
+    (todayJobs.jobs || []).forEach(j => {
+        if (excludeStatuses.has(j.status)) return;
+        const ca = j.created_at;
+        if (!ca) return;
+        // Convert to IST and compare date
+        const jobDate = new Date(typeof ca === 'string' ? ca.replace(' ', 'T') : ca);
+        const jobIST = new Date(jobDate.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const jobStr = jobIST.getFullYear() + '-' +
+            String(jobIST.getMonth() + 1).padStart(2, '0') + '-' +
+            String(jobIST.getDate()).padStart(2, '0');
+        if (jobStr === todayStr) computedTodayJobs++;
+    });
+    stats.today_jobs = computedTodayJobs;
+
+    // Swap skeleton → real content on first load
+    const skelEl = document.getElementById('overviewSkeletons');
+    const contentEl = document.getElementById('overviewContent');
+    if (skelEl && skelEl.classList.contains('active')) {
+        skelEl.classList.remove('active');
+        contentEl.classList.remove('hidden');
+    }
+
+    S.cache.stats = stats;
+    const m = document.getElementById('metricsGrid');
+
+    const statsHash = JSON.stringify(stats);
+    const statsChanged = statsHash !== S._lastStatsHash;
+
+    // Always update tab counts
+    document.getElementById('cntUsers').textContent = ` ${stats.total_users}`;
+    document.getElementById('cntPrints').textContent = ` ${stats.total_jobs}`;
+
+    if (statsChanged) {
+        S._lastStatsHash = statsHash;
+        const metricDefs = [
+            { label: 'Total Users', value: stats.total_users, cls: '', span: 1 },
+            { label: 'Total Prints', value: stats.total_jobs, cls: '', span: 1 },
+            { label: 'Total Revenue', value: cur(stats.total_revenue_cents), cls: 'green', span: 2 },
+            { label: 'Prints Today', value: stats.today_jobs, cls: stats.today_jobs > 0 ? 'green' : '', span: 1 },
+            { label: 'Revenue Today', value: cur(stats.today_revenue_cents), cls: stats.today_revenue_cents > 0 ? 'green' : '', span: 2 },
+            { label: 'Active Users (7d)', value: stats.active_users_7d, cls: '', span: 1 },
+            { label: 'Pending Prints', value: stats.pending_jobs, cls: stats.pending_jobs > 0 ? 'yellow' : '', span: 1 },
+            { label: 'Failed Payments', value: stats.failed_payments, cls: stats.failed_payments > 0 ? 'red' : '', span: 1 },
+        ];
+
+        m.innerHTML = metricDefs.map((d, i) => {
+            const delay = _overviewFirstLoad ? `animation-delay:${i * 0.06}s` : '';
+            const animClass = _overviewFirstLoad ? 'anim-stagger' : '';
+            const spanClass = d.span === 2 ? 'span-2' : '';
+            return `<div class="metric ${animClass} ${spanClass}" style="${delay}">
+                <div class="metric-label">${d.label}</div>
+                <div class="metric-row">
+                    <div class="metric-value ${d.cls}" data-count-to="${typeof d.value === 'number' ? d.value : ''}">${typeof d.value === 'number' ? formatNum(d.value) : d.value}</div>
+                </div>
+            </div>`;
+        }).join('');
+
+        // Animated counting
+        if (_overviewFirstLoad) {
+            m.querySelectorAll('[data-count-to]').forEach(el => {
+                const target = parseInt(el.dataset.countTo);
+                if (isNaN(target) || target === 0) return;
+                animateCount(el, 0, target, 800);
+            });
+        }
+    }
+
+    // Charts
+    renderTrends(trends);
+
+    // Donut + Status cards
+    const bd = prints.breakdown || [];
+    const bdHash = JSON.stringify(bd);
+    if (bdHash !== S._lastBreakdownHash) {
+        S._lastBreakdownHash = bdHash;
+        const sg = document.getElementById('statusGrid');
+        const totalJobs = bd.reduce((s, b) => s + b.count, 0);
+        document.getElementById('donutTotal').textContent = formatNum(totalJobs);
+
+        if (!bd.length) {
+            sg.innerHTML = '<div class="empty"><div class="empty-title">No data</div></div>';
+        } else {
+            renderDonut(bd, totalJobs);
+            sg.innerHTML = bd.map((b, i) => {
+                const delay = _overviewFirstLoad ? `animation-delay:${0.5 + i * 0.05}s` : '';
+                const animClass = _overviewFirstLoad ? 'anim-stagger' : '';
+                return `<div class="status-card ${animClass}" style="--status-color:${statusColor(b.status)};${delay}">
+                    <div class="status-count" style="color:${statusColor(b.status)}">${b.count}</div>
+                    <div class="status-name">${displayStatus(b.status)}</div>
+                </div>`;
+            }).join('');
+        }
+    }
+    _overviewFirstLoad = false;
+}
+
+function formatNum(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 10000) return (n / 1000).toFixed(1) + 'K';
+    return n.toLocaleString();
+}
+
+function animateCount(el, start, end, duration) {
+    const startTime = performance.now();
+    const cls = el.className;
+    function tick(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(start + (end - start) * ease);
+        el.textContent = formatNum(current);
+        if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+}
+
+function renderDonut(breakdown, total) {
+    const svg = document.getElementById('donutChart');
+    if (!svg) return;
+    const cx = 90, cy = 90, r = 70, strokeWidth = 18;
+    const circumference = 2 * Math.PI * r;
+    let cumulative = 0;
+    const arcs = breakdown.map(b => {
+        const pct = total > 0 ? b.count / total : 0;
+        const dashLen = pct * circumference;
+        const offset = cumulative * circumference;
+        cumulative += pct;
+        return { ...b, pct, dashLen, offset };
+    });
+    svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--surface-3)" stroke-width="${strokeWidth}"/>` +
+        arcs.map((a, i) => {
+            const rotation = -90 + (a.offset / circumference) * 360;
+            return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+                stroke="${statusColor(a.status)}" stroke-width="${strokeWidth}"
+                stroke-dasharray="${a.dashLen} ${circumference - a.dashLen}"
+                stroke-linecap="round"
+                transform="rotate(${rotation} ${cx} ${cy})"
+                style="--circumference:${circumference};--dash-offset:${circumference - a.dashLen};animation:donutDraw 1s cubic-bezier(.22,1,.36,1) ${0.3 + i * 0.08}s both;opacity:0.85"
+            />`;
+        }).join('');
+}
+
+// ─── Charts ───
+let _lastTrendsHash = null;
+function renderTrends(trends) {
+    // Skip re-render if data hasn't changed
+    const hash = JSON.stringify(trends);
+    if (_lastTrendsHash === hash) return;
+
+    // Fill in 30-day date range
+    const days = [];
+    for (let i = 29; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        days.push(d.toISOString().slice(0, 10));
+    }
+
+    const revMap = {}; (trends.revenue_daily || []).forEach(r => revMap[r.day] = r.revenue_cents / 100);
+    const prnMap = {}; (trends.prints_daily || []).forEach(r => prnMap[r.day] = r.count);
+    const usrMap = {}; (trends.signups_daily || []).forEach(r => usrMap[r.day] = r.count);
+
+    const revData = days.map(d => ({ day: d, val: revMap[d] || 0 }));
+    const prnData = days.map(d => ({ day: d, val: prnMap[d] || 0 }));
+    const usrData = days.map(d => ({ day: d, val: usrMap[d] || 0 }));
+
+    const revSum = revData.reduce((s, d) => s + d.val, 0);
+    const prnSum = prnData.reduce((s, d) => s + d.val, 0);
+    const usrSum = usrData.reduce((s, d) => s + d.val, 0);
+
+    document.getElementById('chartRevTotal').textContent = '\u20b9' + revSum.toFixed(2);
+    document.getElementById('chartPrintTotal').textContent = prnSum.toString();
+    document.getElementById('chartUserTotal').textContent = usrSum.toString();
+
+    drawBarChart('chartRevenue', 'tipRevenue', revData, '#00c851', v => '\u20b9' + v.toFixed(2));
+    drawChart('chartPrints', 'tipPrints', prnData, '#448aff', v => v + ' prints');
+    drawChart('chartUsers', 'tipUsers', usrData, '#aa66cc', v => v + ' users');
+
+    // Only mark as rendered if canvases actually drew (non-zero width)
+    const testCanvas = document.getElementById('chartPrints');
+    if (testCanvas && testCanvas.getBoundingClientRect().width > 0) {
+        _lastTrendsHash = hash;
+    }
+}
+
+// ─── Bar Chart ───
+function drawBarChart(canvasId, tipId, data, color, fmtVal) {
+    const canvas = document.getElementById(canvasId);
+    const tip = document.getElementById(tipId);
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0) return;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const W = rect.width, H = rect.height;
+    const pad = { t: 8, r: 12, b: 24, l: 8 };
+    const cW = W - pad.l - pad.r;
+    const cH = H - pad.t - pad.b;
+    const vals = data.map(d => d.val);
+    const maxV = Math.max(...vals, 1);
+    const n = data.length;
+    const barGap = 2;
+    const barW = Math.max(2, (cW - (n - 1) * barGap) / n);
+
+    // Save for resize
+    const existing = S.chartConfigs.find(c => c.canvasId === canvasId);
+    if (existing) Object.assign(existing, { data, color, fmtVal, tipId, type: 'bar' });
+    else S.chartConfigs.push({ canvasId, tipId, data, color, fmtVal, type: 'bar' });
+
+    const duration = 700;
+    const start = performance.now();
+
+    function renderFrame(progress) {
+        ctx.clearRect(0, 0, W, H);
+
+        // Grid lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+            const y = pad.t + (cH / 4) * i;
+            ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+        }
+
+        // Bars
+        const ease = 1 - Math.pow(1 - progress, 3);
+        for (let i = 0; i < n; i++) {
+            const x = pad.l + i * (barW + barGap);
+            const fullH = (vals[i] / maxV) * cH;
+            const h = fullH * ease;
+            const y = pad.t + cH - h;
+
+            // Gradient fill
+            const grad = ctx.createLinearGradient(x, y, x, pad.t + cH);
+            grad.addColorStop(0, color);
+            grad.addColorStop(1, color + '30');
+            ctx.fillStyle = grad;
+
+            // Rounded top
+            const r = Math.min(barW / 2, 3);
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + barW - r, y);
+            ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+            ctx.lineTo(x + barW, pad.t + cH);
+            ctx.lineTo(x, pad.t + cH);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // X-axis labels
+        const labelStep = W < 300 ? 14 : W < 500 ? 10 : 7;
+        ctx.fillStyle = '#555';
+        ctx.font = `${W < 400 ? 7 : 9}px Inter, sans-serif`;
+        ctx.textAlign = 'center';
+        for (let i = 0; i < n; i += labelStep) {
+            const x = pad.l + i * (barW + barGap) + barW / 2;
+            ctx.fillText(data[i].day.slice(5), x, H - 4);
+        }
+        if (n - 1 > 0) {
+            const x = pad.l + (n - 1) * (barW + barGap) + barW / 2;
+            ctx.fillText(data[n - 1].day.slice(5), x, H - 4);
+        }
+    }
+
+    if (duration > 0) {
+        function tick(now) {
+            const t = Math.min((now - start) / duration, 1);
+            renderFrame(t);
+            if (t < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    } else {
+        renderFrame(1);
+    }
+
+    // Hover
+    function showTip(clientX) {
+        const bnd = canvas.getBoundingClientRect();
+        const mx = clientX - bnd.left;
+        let idx = Math.floor((mx - pad.l) / (barW + barGap));
+        idx = Math.max(0, Math.min(idx, n - 1));
+        tip.style.opacity = '1';
+        const tipX = Math.min(pad.l + idx * (barW + barGap), W - 80);
+        tip.style.left = Math.max(0, tipX) + 'px';
+        tip.style.top = (pad.t - 8) + 'px';
+        tip.textContent = data[idx].day.slice(5) + ': ' + fmtVal(data[idx].val);
+    }
+    canvas.onmousemove = e => showTip(e.clientX);
+    canvas.ontouchmove = e => { e.preventDefault(); showTip(e.touches[0].clientX); };
+    canvas.onmouseleave = () => { tip.style.opacity = '0'; };
+    canvas.ontouchend = () => { tip.style.opacity = '0'; };
+}
+
+// Store chart configs for resize redraw
+S.chartConfigs = [];
+
+let _resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+        S.chartConfigs.forEach(c => {
+            if (c.type === 'bar') drawBarChart(c.canvasId, c.tipId, c.data, c.color, c.fmtVal);
+            else drawChart(c.canvasId, c.tipId, c.data, c.color, c.fmtVal, false);
+        });
+    }, 200);
+});
+
+function drawChart(canvasId, tipId, data, color, fmtVal, animate = true) {
+    const canvas = document.getElementById(canvasId);
+    const tip = document.getElementById(tipId);
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0) return; // not visible yet
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const W = rect.width, H = rect.height;
+    const pad = { t: 8, r: 12, b: 24, l: 8 };
+    const cW = W - pad.l - pad.r;
+    const cH = H - pad.t - pad.b;
+    const vals = data.map(d => d.val);
+    const maxV = Math.max(...vals, 1);
+    const n = data.length;
+    const stepX = cW / (n - 1 || 1);
+
+    // Points
+    const pts = data.map((d, i) => ({
+        x: pad.l + i * stepX,
+        y: pad.t + cH - (d.val / maxV) * cH,
+    }));
+
+    // Save config for resize
+    const existing = S.chartConfigs.find(c => c.canvasId === canvasId);
+    if (existing) Object.assign(existing, { data, color, fmtVal, tipId });
+    else S.chartConfigs.push({ canvasId, tipId, data, color, fmtVal });
+
+    // Bezier helper
+    function drawCurve(ctx, pts, endIdx) {
+        ctx.moveTo(pts[0].x, pts[0].y);
+        const limit = Math.min(endIdx, pts.length - 1);
+        for (let i = 1; i <= limit; i++) {
+            const cp = (pts[i].x - pts[i-1].x) / 2;
+            ctx.bezierCurveTo(pts[i-1].x + cp, pts[i-1].y, pts[i].x - cp, pts[i].y, pts[i].x, pts[i].y);
+        }
+    }
+
+    function renderFrame(progress) {
+        ctx.clearRect(0, 0, W, H);
+
+        // Grid lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i++) {
+            const y = pad.t + (cH / 4) * i;
+            ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+        }
+
+        // How many points to reveal
+        const revealF = progress * (n - 1);
+        const revealI = Math.floor(revealF);
+        const frac = revealF - revealI;
+
+        // Interpolated end point
+        let endPts = pts.slice(0, revealI + 1);
+        if (revealI < n - 1 && frac > 0) {
+            const a = pts[revealI], b = pts[revealI + 1];
+            endPts.push({ x: a.x + (b.x - a.x) * frac, y: a.y + (b.y - a.y) * frac });
+        }
+        const lastPt = endPts[endPts.length - 1];
+
+        // Area gradient
+        const grad = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
+        grad.addColorStop(0, color + '35');
+        grad.addColorStop(0.6, color + '10');
+        grad.addColorStop(1, 'transparent');
+        ctx.beginPath();
+        ctx.moveTo(endPts[0].x, endPts[0].y);
+        for (let i = 1; i < endPts.length; i++) {
+            const cp = (endPts[i].x - endPts[i-1].x) / 2;
+            ctx.bezierCurveTo(endPts[i-1].x + cp, endPts[i-1].y, endPts[i].x - cp, endPts[i].y, endPts[i].x, endPts[i].y);
+        }
+        ctx.lineTo(lastPt.x, H - pad.b);
+        ctx.lineTo(endPts[0].x, H - pad.b);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Line
+        ctx.beginPath();
+        ctx.moveTo(endPts[0].x, endPts[0].y);
+        for (let i = 1; i < endPts.length; i++) {
+            const cp = (endPts[i].x - endPts[i-1].x) / 2;
+            ctx.bezierCurveTo(endPts[i-1].x + cp, endPts[i-1].y, endPts[i].x - cp, endPts[i].y, endPts[i].x, endPts[i].y);
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Glow dot at tip
+        if (progress < 1) {
+            ctx.beginPath();
+            ctx.arc(lastPt.x, lastPt.y, 3, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(lastPt.x, lastPt.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = color + '30';
+            ctx.fill();
+        }
+
+        // X-axis labels (show based on width)
+        const labelStep = W < 300 ? 14 : W < 500 ? 10 : 7;
+        ctx.fillStyle = '#555';
+        ctx.font = `${W < 400 ? 7 : 9}px Inter, sans-serif`;
+        ctx.textAlign = 'center';
+        for (let i = 0; i < n; i += labelStep) {
+            ctx.fillText(data[i].day.slice(5), pts[i].x, H - 4);
+        }
+        if (n - 1 > 0) ctx.fillText(data[n-1].day.slice(5), pts[n-1].x, H - 4);
+    }
+
+    // Animation
+    const duration = animate ? 700 : 0;
+    if (duration > 0) {
+        const start = performance.now();
+        function tick(now) {
+            const elapsed = now - start;
+            const t = Math.min(elapsed / duration, 1);
+            const ease = 1 - Math.pow(1 - t, 3); // easeOutCubic
+            renderFrame(ease);
+            if (t < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    } else {
+        renderFrame(1);
+    }
+
+    // Hover / Touch
+    function showTip(clientX) {
+        const bnd = canvas.getBoundingClientRect();
+        const mx = clientX - bnd.left;
+        let idx = Math.round((mx - pad.l) / stepX);
+        idx = Math.max(0, Math.min(idx, n - 1));
+        tip.style.opacity = '1';
+        const tipX = Math.min(pts[idx].x - 20, W - 80);
+        tip.style.left = Math.max(0, tipX) + 'px';
+        tip.style.top = (pts[idx].y - 32) + 'px';
+        tip.textContent = data[idx].day.slice(5) + ': ' + fmtVal(data[idx].val);
+    }
+    canvas.onmousemove = e => showTip(e.clientX);
+    canvas.ontouchmove = e => { e.preventDefault(); showTip(e.touches[0].clientX); };
+    canvas.onmouseleave = () => { tip.style.opacity = '0'; };
+    canvas.ontouchend = () => { tip.style.opacity = '0'; };
+}
+
+function mk(label, value, sub, cls) {
+    return `<div class="metric"><div class="metric-label">${label}</div><div class="metric-value ${cls || ''}">${typeof value === 'number' ? value.toLocaleString() : value}</div>${sub ? `<div class="metric-sub">${sub}</div>` : ''}</div>`;
+}
+
+// ─── Users ───
+async function loadUsers() {
+    const d = await api('/api/admin/users');
+    S.cache.users = d;
+    document.getElementById('cntUsers').textContent = ` ${d.total}`;
+    renderUsers(d.users);
+}
+
+function renderUsers(users) {
+    const tb = document.getElementById('tbUsers');
+    if (!users?.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="empty-title">No users</div></div></td></tr>'; return; }
+    tb.innerHTML = users.map(u => `<tr>
+        <td class="mono">${u.id}</td>
+        <td class="val">${esc(u.name || '—')}</td>
+        <td>${esc(u.email)}</td>
+        <td><span class="tag ${u.google_id ? 'tag-blue' : 'tag-purple'}">${u.google_id ? 'Google' : 'Email'}</span></td>
+        <td class="val">${u.job_count}</td>
+        <td class="${u.total_spent_cents > 0 ? 'val-green' : 'val-dim'}">${cur(u.total_spent_cents)}</td>
+        <td>${fmtDate(u.created_at)}</td>
+        <td>${fmtDate(u.last_login)}</td>
+    </tr>`).join('');
+}
+
+document.getElementById('searchUsers').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    if (!S.cache.users) return;
+    renderUsers(S.cache.users.users.filter(u => (u.name||'').toLowerCase().includes(q) || u.email.toLowerCase().includes(q)));
+});
+
+// ─── Payments ───
+async function loadPayments() {
+    const d = await api(`/api/admin/payments?limit=${S.limPay}&offset=${S.pPay * S.limPay}`);
+    S.cache.payments = d;
+    document.getElementById('cntPayments').textContent = ` ${d.total}`;
+    renderPayments(d.payments);
+    paginate('pagPayments', d.total, S.pPay, S.limPay, p => { S.pPay = p; loadPayments(); });
+}
+
+function renderPayments(list) {
+    const tb = document.getElementById('tbPayments');
+    if (!list?.length) { tb.innerHTML = '<tr><td colspan="9"><div class="empty"><div class="empty-title">No payments</div></div></td></tr>'; return; }
+    tb.innerHTML = list.map(p => `<tr>
+        <td class="mono">${esc(p.order_id || '—')}</td>
+        <td class="mono">${esc(p.ticket || '—')}</td>
+        <td class="${(p.job_amount_cents || p.amount_cents) > 0 ? 'val-green' : 'val-dim'}">${cur(p.job_amount_cents || p.amount_cents)}</td>
+        <td>${tagFor(p.status)}</td>
+        <td>${esc(p.payment_gateway || '—')}</td>
+        <td>${esc(p.payment_method || '—')}</td>
+        <td>${esc(p.customer_email || p.job_email || '—')}</td>
+        <td>${fmtDate(p.created_at)}</td>
+        <td>${fmtDate(p.verified_at)}</td>
+    </tr>`).join('');
+}
+
+document.getElementById('searchPayments').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    if (!S.cache.payments) return;
+    renderPayments(S.cache.payments.payments.filter(p =>
+        (p.order_id||'').toLowerCase().includes(q) || (p.customer_email||'').toLowerCase().includes(q) || (p.ticket||'').toLowerCase().includes(q)
+    ));
+});
+
+// ─── Print Orders ───
+async function loadPrints() {
+    let url = `/api/admin/jobs?limit=${S.limPrint}&offset=${S.pPrint * S.limPrint}`;
+    if (S.printFilter) url += `&status=${S.printFilter}`;
+    const d = await api(url);
+    S.cache.prints = d;
+    document.getElementById('cntPrints').textContent = ` ${d.total}`;
+    renderPrintChips(d.breakdown);
+    renderPrints(d.jobs);
+    paginate('pagPrints', d.total, S.pPrint, S.limPrint, p => { S.pPrint = p; loadPrints(); });
+}
+
+function renderPrintChips(bd) {
+    const bar = document.getElementById('printChips');
+    const all = [{ status: null, label: 'All', count: bd.reduce((s, b) => s + b.count, 0) }];
+    bd.forEach(b => all.push({ status: b.status, label: displayStatus(b.status), count: b.count }));
+    bar.innerHTML = all.map(c => `<button class="chip ${S.printFilter === c.status ? 'active' : ''}" onclick="filterPrints(${c.status ? `'${c.status}'` : 'null'})">${c.label} ${c.count}</button>`).join('');
+}
+
+window.filterPrints = s => { S.printFilter = s; S.pPrint = 0; loadPrints(); };
+
+function renderPrints(list) {
+    const tb = document.getElementById('tbPrints');
+    if (!list?.length) { tb.innerHTML = '<tr><td colspan="9"><div class="empty"><div class="empty-title">No print orders</div></div></td></tr>'; return; }
+    tb.innerHTML = list.map(j => `<tr>
+        <td class="mono">${esc(j.ticket)}</td>
+        <td>${tagFor(j.status)}</td>
+        <td>${esc(j.sender || '—')}</td>
+        <td title="${esc(j.filename)}">${esc(trunc(j.filename, 22))}</td>
+        <td class="val">${j.page_count || '—'}</td>
+        <td>${j.paper_size || 'A4'} · ${j.color_mode === 'color' ? 'Color' : 'B&W'} · ${j.duplex ? 'Duplex' : 'Single'} · x${j.copies}</td>
+        <td class="${(j.client_estimate_cents || j.estimate_cents) > 0 ? 'val-green' : 'val-dim'}">${cur(j.client_estimate_cents || j.estimate_cents)}</td>
+        <td>${esc(j.user_email || j.customer_email || '—')}</td>
+        <td>${fmtDate(j.created_at)}</td>
+    </tr>`).join('');
+}
+
+document.getElementById('searchPrints').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    if (!S.cache.prints) return;
+    renderPrints(S.cache.prints.jobs.filter(j =>
+        (j.ticket||'').toLowerCase().includes(q) || (j.sender||'').toLowerCase().includes(q) || (j.filename||'').toLowerCase().includes(q) || (j.user_email||'').toLowerCase().includes(q)
+    ));
+});
+
+// ─── Logs ───
+window.switchLogTab = (type, el) => {
+    S.logType = type;
+    document.querySelectorAll('.log-tab').forEach(t => t.classList.toggle('active', t.dataset.logtype === type));
+    loadLogs();
+};
+
+async function loadLogs() {
+    const endpoint = S.logType === 'errors' ? '/api/admin/errors?lines=300' : '/api/admin/logs?lines=500';
+    const d = await api(endpoint);
+    const key = S.logType === 'errors' ? 'errors' : 'logs';
+    const lines = d[key] || [];
+    document.getElementById('cntLogs').textContent = ` ${d.total}`;
+    document.getElementById('logTotal').textContent = `${d.total.toLocaleString()} entries`;
+    document.getElementById('logSize').textContent = fmtSize(d.log_size_bytes || 0);
+    const body = document.getElementById('logBody');
+    if (!lines.length) { body.innerHTML = '<div class="empty"><div class="empty-title">No log entries</div></div>'; return; }
+    body.innerHTML = lines.map(l => {
+        let c = 'log-line';
+        if (l.includes('CRITICAL')) c += ' crit';
+        else if (l.includes('ERROR')) c += ' err';
+        else if (l.includes('WARNING')) c += ' warn';
+        else if (l.includes('INFO')) c += ' info';
+        return `<div class="${c}">${esc(convertLogTimeToIST(l))}</div>`;
+    }).join('');
+}
+
+// ─── Utilities ───
+function cur(c) { return c ? '₹' + (c / 100).toFixed(2) : '₹0'; }
+
+function convertLogTimeToIST(line) {
+    // Match log timestamps like "2026-03-21 10:18:34,620"
+    const m = line.match(/(\d{4}-\d{2}-\d{2})\s(\d{2}:\d{2}:\d{2}),(\d{3})/);
+    if (!m) return line;
+    const utc = new Date(m[1] + 'T' + m[2] + 'Z');
+    const ist = new Date(utc.getTime() + 5.5 * 60 * 60 * 1000);
+    const pad = n => String(n).padStart(2, '0');
+    let h = ist.getUTCHours();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    const ts = `${pad(ist.getUTCDate())}/${pad(ist.getUTCMonth()+1)}/${ist.getUTCFullYear()} ${h}:${pad(ist.getUTCMinutes())}:${pad(ist.getUTCSeconds())} ${ampm}`;
+    return line.replace(m[0], ts);
+}
+
+function fmtDate(s) {
+    if (!s) return '—';
+    try {
+        const d = new Date(s);
+        if (isNaN(d)) return s.substring(0, 16).replace('T', ' ');
+        const now = new Date();
+        if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch { return s; }
+}
+
+function fmtSize(b) {
+    if (!b) return '0 B';
+    const u = ['B', 'KB', 'MB', 'GB']; let i = 0, s = b;
+    while (s >= 1024 && i < u.length - 1) { s /= 1024; i++; }
+    return s.toFixed(i ? 1 : 0) + ' ' + u[i];
+}
+
+function trunc(s, n) { return s?.length > n ? s.substring(0, n) + '…' : (s || ''); }
+
+function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function displayStatus(s) {
+    const map = {
+        pending_payment: 'Awaiting Payment', paid: 'Paid', pending: 'Queued',
+        printed: 'Printed', delivered: 'Delivered', downloaded: 'Downloaded',
+        cancelled: 'Cancelled', refunded: 'Refunded', expired: 'Expired',
+        draft: 'Draft', created: 'Created', archived: 'Archived', captured: 'Captured', failed: 'Failed',
+    };
+    return map[s] || s;
+}
+
+function tagFor(s) {
+    const cls = { paid: 'green', captured: 'green', delivered: 'green', printed: 'purple', downloaded: 'blue',
+        pending: 'yellow', pending_payment: 'yellow', created: 'dim', draft: 'dim',
+        failed: 'red', cancelled: 'red', refunded: 'red', expired: 'dim', archived: 'dim' };
+    return `<span class="tag tag-${cls[s] || 'dim'}">${displayStatus(s)}</span>`;
+}
+
+function statusColor(s) {
+    const c = { paid: '#00c851', pending: '#ffbb33', pending_payment: '#ffbb33', printed: '#aa66cc',
+        delivered: '#00c851', downloaded: '#448aff', failed: '#ff4444', cancelled: '#ff4444',
+        expired: '#555', draft: '#555', created: '#666', archived: '#555', refunded: '#ff4444', captured: '#00c851' };
+    return c[s] || '#555';
+}
+
+function paginate(id, total, page, limit, cb) {
+    const el = document.getElementById(id);
+    const pages = Math.ceil(total / limit);
+    if (pages <= 1) { el.innerHTML = `<span class="paging-info">${total} total</span>`; return; }
+    el.innerHTML = `<span class="paging-info">${page * limit + 1}–${Math.min((page + 1) * limit, total)} of ${total}</span>
+        <div class="paging-btns"><button class="paging-btn" ${page === 0 ? 'disabled' : ''} id="${id}P">Prev</button><button class="paging-btn" ${page >= pages - 1 ? 'disabled' : ''} id="${id}N">Next</button></div>`;
+    document.getElementById(`${id}P`)?.addEventListener('click', () => cb(page - 1));
+    document.getElementById(`${id}N`)?.addEventListener('click', () => cb(page + 1));
+}
+
+// ─── Init ───
+checkSession();
+</script>
+</body>
+</html>

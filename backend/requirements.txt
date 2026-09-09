@@ -1,0 +1,55 @@
+# Core dependencies
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+gunicorn>=21.0.0
+python-multipart>=0.0.6
+pydantic-settings>=2.0.0
+aiofiles>=23.0.0
+qrcode[pil]>=7.4.0
+slowapi>=0.1.8
+python-dotenv>=1.0.0
+
+# Background task scheduler
+apscheduler>=3.10.0
+
+# HTTP client for Cashfree API
+requests>=2.31.0
+httpx>=0.24.0
+
+# PDF processing
+pikepdf>=8.0.0
+
+# Image processing
+Pillow>=10.0.0
+
+# SMS (optional - requires USB GSM modem)
+# python-gsmmodem-new>=0.10
+
+# async HTTP client (for stress testing)
+aiohttp>=3.8.0
+
+# Authentication
+passlib[bcrypt]>=1.7.4
+python-jose[cryptography]>=3.3.0
+email-validator>=2.0.0
+
+# PostgreSQL database (Supabase)
+psycopg2-binary>=2.9.0
+
+# Supabase client (for storage)
+supabase>=2.0.0
+
+# Google Drive API
+google-auth>=2.0.0
+google-auth-oauthlib>=1.0.0
+google-api-python-client>=2.0.0
+
+# Encryption (for storing refresh tokens at rest)
+cryptography>=41.0.0
+
+# Testing
+pytest>=8.0.0
+pytest-playwright>=0.4.0
+
+# Error monitoring
+sentry-sdk[fastapi]>=2.0.0

@@ -1,0 +1,366 @@
+/* =============================================
+   Upload & Print — History Page Styles (history.css)
+   Extracted from history.html for caching & themes.
+   All colors use CSS custom properties from theme.css
+   ============================================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100dvh;
+    min-height: 100vh;
+    background: var(--bg-950);
+    color: var(--text-primary);
+    padding: 0;
+    padding-bottom: 100px;
+}
+
+.page {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.page.loaded {
+    opacity: 1;
+}
+
+/* ===== Header ===== */
+.page-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+}
+
+/* ===== Stats Row ===== */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+}
+
+.stat-pill {
+    background: var(--overlay-light);
+    border: 1px solid var(--overlay-border-dim);
+    border-radius: 16px;
+    padding: 14px 12px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+/* ===== Jobs List ===== */
+.section-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-left: 4px;
+}
+
+.job-card {
+    background: var(--overlay-light);
+    border: 1px solid var(--overlay-border-dim);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+}
+
+.job-card:active {
+    transform: scale(0.98);
+}
+
+.job-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.job-filename {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    word-break: break-word;
+    line-height: 1.3;
+    max-width: 70%;
+}
+
+.job-amount {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.job-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.detail-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--overlay-light);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--overlay-text-dim);
+    font-weight: 500;
+}
+
+.detail-chip.ticket {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 5px 12px;
+    background: rgba(168, 130, 255, 0.12);
+    border: 1px solid rgba(168, 130, 255, 0.25);
+    letter-spacing: 0.02em;
+}
+
+.job-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.job-date {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.status-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-dot::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot.pending::before { background: var(--status-pending); }
+.status-dot.pending { color: var(--status-pending); }
+.status-dot.paid::before { background: var(--status-paid); }
+.status-dot.paid { color: var(--status-paid); }
+.status-dot.printed::before { background: var(--status-printed); }
+.status-dot.printed { color: var(--status-printed); }
+.status-dot.delivered::before { background: var(--status-delivered); }
+.status-dot.delivered { color: var(--status-delivered); }
+.status-dot.archived::before { background: var(--status-archived); }
+.status-dot.archived { color: var(--status-archived); }
+.status-dot.downloaded::before { background: var(--status-printed); }
+.status-dot.downloaded { color: var(--status-printed); }
+
+/* ===== Empty State ===== */
+.empty-state {
+    padding: 60px 24px;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 20px;
+    background: var(--overlay-light);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+.empty-state h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.empty-state p {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+/* ===== Loading ===== */
+.loading-state {
+    display: flex;
+    justify-content: center;
+    padding: 60px;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--spinner-track);
+    border-top-color: var(--spinner-fill);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== Error ===== */
+.error-state {
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--overlay-text-dim);
+}
+
+.error-state button {
+    margin-top: 12px;
+    padding: 10px 24px;
+    background: var(--overlay-medium);
+    border: 1px solid var(--overlay-border-dim);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* ===== Bottom Nav — Glassmorphism ===== */
+.bottom-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 22px;
+    padding: 8px 12px;
+    display: flex;
+    gap: 8px;
+    z-index: 1000;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 0 16px 8px rgba(255, 255, 255, 0.08);
+}
+
+/* Light mode: slightly more opaque glass */
+[data-theme="light"] .bottom-nav {
+    background: rgba(255, 255, 255, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 0 16px 8px rgba(255, 255, 255, 0.15);
+}
+
+/* Top edge shine */
+.bottom-nav::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+    border-radius: 22px 22px 0 0;
+    pointer-events: none;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 40px;
+    border-radius: 14px;
+    color: var(--nav-inactive);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.nav-item:hover {
+    color: var(--text-primary);
+    background: var(--overlay-medium);
+}
+
+.nav-item.active {
+    background: var(--accent);
+    color: var(--accent-on);
+    padding: 0 20px;
+    width: auto;
+}
+
+.nav-item svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+/* Nav indicator */
+.nav-indicator {
+    position: absolute;
+    background: var(--accent);
+    border-radius: 14px;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+    pointer-events: none;
+}
+.nav-item { position: relative; z-index: 1; }
+
+/* ===== Responsive ===== */
+@media (max-width: 400px) {
+    .stats-row {
+        gap: 8px;
+    }
+
+    .stat-pill {
+        padding: 12px 8px;
+    }
+
+    .stat-value {
+        font-size: 18px;
+    }
+
+    .job-card {
+        padding: 14px;
+    }
+}

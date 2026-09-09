@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrintPress - Developers</title>
+    <meta name="description" content="Developers behind PrintPress">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Century Gothic", CenturyGothic, Geneva, AppleGothic, sans-serif;
+            background: #ffffff;
+            color: #000000;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .developers {
+            display: flex;
+            gap: 80px;
+            align-items: flex-start;
+        }
+
+        .developer-card {
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .name {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 40px;
+            color: #000000;
+            margin-bottom: 24px;
+        }
+
+        .bio {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #444;
+            margin-bottom: 12px;
+        }
+
+        .socials {
+            margin-top: 16px;
+            font-size: 14px;
+            line-height: 2;
+            color: #444;
+        }
+
+        .socials a {
+            color: #1a6dcc;
+            text-decoration: none;
+        }
+
+        .socials a:hover {
+            text-decoration: underline;
+        }
+
+        .divider {
+            width: 1px;
+            background: #e0e0e0;
+            align-self: stretch;
+        }
+
+        .quotes-footer {
+            position: fixed;
+            bottom: 20px;
+            left: 24px;
+        }
+
+        .quote {
+            font-size: 11px;
+            font-style: italic;
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 6px;
+        }
+
+        .author {
+            font-style: normal;
+            font-weight: 500;
+            color: #d5d5d5;
+        }
+
+        @media (max-width: 700px) {
+            .developers {
+                flex-direction: column;
+                gap: 40px;
+                align-items: center;
+            }
+
+            .divider {
+                width: 60%;
+                height: 1px;
+                align-self: center;
+            }
+
+            .container {
+                padding: 40px 24px;
+            }
+
+            .name {
+                font-size: 26px;
+                line-height: 34px;
+                margin-bottom: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="developers">
+            <div class="developer-card">
+                <div class="name">Kamesh Pravin</div>
+                <p class="bio">i am studying electronics and computer engineering</p>
+                <p class="bio" style="font-size:14px; color:#888;"><a href="mailto:kameshpravin25@gmail.com"
+                        style="color:#1a6dcc; text-decoration:none;">kameshpravin25@gmail.com</a></p>
+                <div class="socials">
+                    <div>connect with me</div>
+                    <div><a href="https://www.linkedin.com/in/kamesh-pravin-835b312a2" target="_blank">LinkedIn</a></div>
+                    <div><a href="https://www.instagram.com/kamesh_pravin/" target="_blank">Instagram</a></div>
+                    <div><a href="https://x.com/Kamesh1344416" target="_blank">X</a></div>
+                    <div><a href="https://github.com/kameshpravin25" target="_blank">GitHub</a></div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="developer-card">
+                <div class="name">Praneel N Chetty</div>
+                <p class="bio">I like neural networks, transformers and business studies</p>
+                <div class="socials">
+                    <div>connect with me</div>
+                    <div><a href="https://praneelchetty.dev/" target="_blank">Portfolio</a></div>
+                    <div><a href="https://github.com/pcap1000" target="_blank">GitHub</a></div>
+                    <div><a href="https://www.linkedin.com/in/praneel-chetty-3b5363405/" target="_blank">LinkedIn</a></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quotes-footer">
+            <div class="quote">"Talk is cheap. Show me the code." <span class="author">— Linus Torvalds</span></div>
+            <div class="quote">"You've got to start with the customer experience and work backwards to the technology."
+                <span class="author">— Steve Jobs</span>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

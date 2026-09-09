@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="/js/security.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Upload & Print</title>
+    <meta name="description" content="Login or create an account to access your print jobs">
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://challenges.cloudflare.com" />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/login.css">
+    <script src="/js/theme.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>Upload & Print</h1>
+            <p>Print from anywhere</p>
+        </div>
+
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login" id="loginTab">Sign In</button>
+                <button class="auth-tab" data-tab="register" id="registerTab">Create Account</button>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+
+            <!-- Google Sign-In (primary) -->
+            <div style="position: relative;" id="googleBtnWrap">
+                <span class="recommended-badge" id="recommendedBadge">RECOMMENDED</span>
+                <button type="button" class="google-btn" id="googleBtn">
+                    <svg viewBox="0 0 24 24">
+                        <path fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                        <path fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    <span id="googleBtnText">Sign in with Google</span>
+                </button>
+            </div>
+
+            <div class="divider">
+                <span>or use email</span>
+            </div>
+
+            <form id="authForm">
+                <div class="form-group name-field" id="nameField" style="display: none;">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" placeholder="Your name" autocomplete="name">
+                </div>
+
+                <div class="form-group" id="emailGroup">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email">
+                </div>
+
+                <div class="form-group" id="passwordGroup">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required minlength="8" autocomplete="current-password">
+                    <p class="form-hint" id="passwordHint" style="display: none;">Minimum 8 characters</p>
+                    <a href="#" class="forgot-link" id="forgotLink" onclick="startForgotPassword(event)">Forgot password?</a>
+                </div>
+
+                <!-- OTP verification step (hidden by default) -->
+                <div class="form-group" id="otpGroup" style="display: none;">
+                    <label>Verification Code</label>
+                    <div class="otp-boxes" id="otpBoxes">
+                        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" autocomplete="one-time-code" data-index="0">
+                        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-index="1">
+                        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-index="2">
+                        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-index="3">
+                        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-index="4">
+                        <input type="text" class="otp-box" maxlength="1" inputmode="numeric" data-index="5">
+                    </div>
+                    <p style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">Check your email for the verification code</p>
+                    <a href="#" id="resendOtp" style="display: inline-block; margin-top: 4px; font-size: 11px; color: var(--text-secondary); text-decoration: underline; cursor: pointer;">Resend code</a>
+                </div>
+
+                <!-- Forgot password: new password step (hidden by default) -->
+                <div class="form-group" id="newPasswordGroup" style="display: none;">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" name="newPassword" placeholder="••••••••" minlength="8" autocomplete="new-password">
+                    <p class="form-hint">Minimum 8 characters</p>
+                </div>
+
+                <!-- Cloudflare Turnstile widget -->
+                <div id="turnstile-container" style="margin: 16px 0; display: flex; justify-content: center;"></div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span id="btnText">Sign In</span>
+                </button>
+            </form>
+
+            <div class="divider">
+                <span>or</span>
+            </div>
+
+            <a href="/?guest=1" class="guest-link">
+                Upload Without Signing In →
+            </a>
+        </div>
+
+        <p class="footer-text">Secure · Fast · Reliable</p>
+    </div>
+
+    <!-- Full-screen success overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-overlay-content">
+            <div class="success-overlay-icon">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="success-overlay-text" id="successOverlayText">Login successful</div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let isLoginMode = true;
+        let isOtpStep = false;
+        let isForgotMode = false;
+        let forgotOtpStep = false;
+        let forgotNewPwStep = false;
+        let pendingEmail = '';
+        let turnstileWidgetId = null;
+        let turnstileToken = '';
+
+        // Render Turnstile widget
+        function renderTurnstile() {
+            const container = document.getElementById('turnstile-container');
+            if (!container) return;
+            // Remove old widget if exists
+            if (turnstileWidgetId !== null && typeof turnstile !== 'undefined') {
+                try { turnstile.remove(turnstileWidgetId); } catch(e) {}
+            }
+            container.innerHTML = '';
+            turnstileToken = '';
+            if (typeof turnstile !== 'undefined') {
+                turnstileWidgetId = turnstile.render('#turnstile-container', {
+                    sitekey: '0x4AAAAAAC1Ac0vnetYPwLcN',
+                    theme: (typeof getTheme === 'function' ? getTheme() : 'dark'),
+                    size: 'flexible',
+                    appearance: 'interaction-only',
+                    callback: function(token) { turnstileToken = token; },
+                    'expired-callback': function() {
+                        turnstileToken = '';
+                        if (typeof turnstile !== 'undefined') turnstile.reset(turnstileWidgetId);
+                    }
+                });
+            }
+        }
+
+        // Get Turnstile token (check stored value first, then query widget)
+        function getTurnstileToken() {
+            if (turnstileToken) return turnstileToken;
+            if (typeof turnstile !== 'undefined' && turnstileWidgetId !== null) {
+                return turnstile.getResponse(turnstileWidgetId) || '';
+            }
+            return '';
+        }
+
+        // Wait for Turnstile token to be ready (up to 3 seconds)
+        function waitForTurnstileToken() {
+            return new Promise((resolve) => {
+                // If token already available, resolve immediately
+                const existing = getTurnstileToken();
+                if (existing) { resolve(existing); return; }
+                // If Turnstile not loaded at all, skip verification
+                if (typeof turnstile === 'undefined') { resolve(''); return; }
+                // Poll for token every 200ms, max 3 seconds
+                let elapsed = 0;
+                const interval = setInterval(() => {
+                    elapsed += 200;
+                    const token = getTurnstileToken();
+                    if (token || elapsed >= 3000) {
+                        clearInterval(interval);
+                        resolve(token || '');
+                    }
+                }, 200);
+            });
+        }
+
+        // Reset Turnstile after each form submission
+        function resetTurnstile() {
+            turnstileToken = '';
+            if (typeof turnstile !== 'undefined' && turnstileWidgetId !== null) {
+                try { turnstile.reset(turnstileWidgetId); } catch(e) {}
+            }
+        }
+
+        // Initialize Turnstile when ready
+        if (typeof turnstile !== 'undefined') {
+            renderTurnstile();
+        } else {
+            // Wait for script to load
+            window.addEventListener('load', () => setTimeout(renderTurnstile, 500));
+        }
+
+        // DOM elements
+        const authForm = document.getElementById('authForm');
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        const nameField = document.getElementById('nameField');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const googleBtn = document.getElementById('googleBtn');
+        const otpGroup = document.getElementById('otpGroup');
+        const emailGroup = document.getElementById('emailGroup');
+        const passwordGroup = document.getElementById('passwordGroup');
+        const resendOtp = document.getElementById('resendOtp');
+        const forgotLink = document.getElementById('forgotLink');
+        const passwordHint = document.getElementById('passwordHint');
+        const newPasswordGroup = document.getElementById('newPasswordGroup');
+
+        // === OTP BOXES LOGIC ===
+        const otpBoxes = document.querySelectorAll('.otp-box');
+        otpBoxes.forEach((box, idx) => {
+            box.addEventListener('input', (e) => {
+                const val = e.target.value.replace(/[^0-9]/g, '');
+                e.target.value = val;
+                if (val) {
+                    e.target.classList.add('filled');
+                    if (idx < 5) otpBoxes[idx + 1].focus();
+                } else {
+                    e.target.classList.remove('filled');
+                }
+            });
+            box.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+                    otpBoxes[idx - 1].focus();
+                    otpBoxes[idx - 1].value = '';
+                    otpBoxes[idx - 1].classList.remove('filled');
+                }
+            });
+            box.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasted = (e.clipboardData.getData('text') || '').replace(/[^0-9]/g, '').slice(0, 6);
+                pasted.split('').forEach((ch, i) => {
+                    if (otpBoxes[i]) {
+                        otpBoxes[i].value = ch;
+                        otpBoxes[i].classList.add('filled');
+                    }
+                });
+                if (pasted.length > 0) otpBoxes[Math.min(pasted.length, 5)].focus();
+            });
+        });
+
+        function getOtpValue() {
+            return Array.from(otpBoxes).map(b => b.value).join('');
+        }
+        function clearOtpBoxes() {
+            otpBoxes.forEach(b => { b.value = ''; b.classList.remove('filled'); });
+        }
+
+        // Show password hint when in create mode
+        function updatePasswordHint() {
+            if (passwordHint) {
+                passwordHint.style.display = isLoginMode ? 'none' : 'block';
+            }
+            if (forgotLink) {
+                forgotLink.style.display = isLoginMode ? 'inline-block' : 'none';
+            }
+        }
+
+        // Tab switching
+        loginTab.addEventListener('click', () => switchTab('login'));
+        registerTab.addEventListener('click', () => switchTab('register'));
+
+        function switchTab(tab) {
+            isLoginMode = tab === 'login';
+            isOtpStep = false;
+            isForgotMode = false;
+            forgotOtpStep = false;
+            forgotNewPwStep = false;
+
+            loginTab.classList.toggle('active', isLoginMode);
+            registerTab.classList.toggle('active', !isLoginMode);
+
+            nameField.style.display = isLoginMode ? 'none' : 'block';
+            otpGroup.style.display = 'none';
+            emailGroup.style.display = 'block';
+            passwordGroup.style.display = 'block';
+            newPasswordGroup.style.display = 'none';
+            // Restore required on password field
+            document.getElementById('password').required = true;
+            btnText.textContent = isLoginMode ? 'Sign In' : 'Send Verification Code';
+            document.getElementById('googleBtnText').textContent = isLoginMode ? 'Sign in with Google' : 'Sign up with Google';
+            updatePasswordHint();
+            clearOtpBoxes();
+            hideMessages();
+        }
+
+        // Forgot password start
+        function startForgotPassword(e) {
+            e.preventDefault();
+            isForgotMode = true;
+            forgotOtpStep = false;
+            forgotNewPwStep = false;
+            passwordGroup.style.display = 'none';
+            nameField.style.display = 'none';
+            newPasswordGroup.style.display = 'none';
+            emailGroup.style.display = 'block';
+            // Remove required from hidden password field so browser validation doesn't block
+            document.getElementById('password').required = false;
+            btnText.textContent = 'Send Reset Code';
+            hideMessages();
+            showInfo('Enter your email to receive a reset code');
+        }
+
+        // Resend OTP
+        resendOtp.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!pendingEmail) return;
+            resendOtp.style.pointerEvents = 'none';
+            resendOtp.textContent = 'Sending...';
+            try {
+                const endpoint = isForgotMode ? '/api/auth/forgot-password' : '/api/auth/send-otp';
+                const body = isForgotMode
+                    ? { email: pendingEmail }
+                    : { email: pendingEmail, password: document.getElementById('password').value, name: document.getElementById('name').value };
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json().catch(() => { throw new Error('Server error'); });
+                if (!response.ok) throw new Error(data.detail || 'Failed to resend code');
+                showInfo('New code sent to your email');
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                resendOtp.textContent = 'Resend code';
+                resendOtp.style.pointerEvents = 'auto';
+            }
+        });
+
+        // Name validation helper
+        function isValidName(name) {
+            return /^[A-Za-z\s]+$/.test(name.trim());
+        }
+
+        // Form submission
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value;
+
+            setLoading(true);
+
+            try {
+                // === FORGOT PASSWORD FLOW ===
+                if (isForgotMode) {
+                    if (forgotNewPwStep) {
+                        // Step 3: Submit new password
+                        const newPw = document.getElementById('newPassword').value;
+                        if (!newPw || newPw.length < 8) {
+                            showError('Password must be at least 8 characters');
+                            setLoading(false);
+                            return;
+                        }
+                        const otp = getOtpValue();
+                        const response = await fetch('/api/auth/reset-password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: pendingEmail, otp, new_password: newPw })
+                        });
+                        const data = await response.json().catch(() => { throw new Error('Server error'); });
+                        if (!response.ok) throw new Error(data.detail || 'Reset failed');
+                        showInfo('Password reset successfully! You can now sign in.');
+                        setTimeout(() => {
+                            isForgotMode = false;
+                            forgotOtpStep = false;
+                            forgotNewPwStep = false;
+                            switchTab('login');
+                        }, 2000);
+                    } else if (forgotOtpStep) {
+                        // Step 2: Verify OTP, show new password field
+                        const otp = getOtpValue();
+                        if (!otp || otp.length !== 6) {
+                            showError('Please enter the 6-digit reset code');
+                            setLoading(false);
+                            return;
+                        }
+                        // Show new password field
+                        forgotNewPwStep = true;
+                        otpGroup.style.display = 'none';
+                        newPasswordGroup.style.display = 'block';
+                        btnText.textContent = 'Reset Password';
+                        document.getElementById('newPassword').focus();
+                    } else {
+                        // Step 1: Send forgot-password OTP
+                        if (!email) {
+                            showError('Please enter your email');
+                            setLoading(false);
+                            return;
+                        }
+                        const tsTokenFP = await waitForTurnstileToken();
+                        const response = await fetch('/api/auth/forgot-password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email, turnstile_token: tsTokenFP })
+                        });
+                        const data = await response.json().catch(() => { throw new Error('Server error'); });
+                        if (!response.ok) throw new Error(data.detail || 'Failed to send reset code');
+                        forgotOtpStep = true;
+                        pendingEmail = email;
+                        emailGroup.style.display = 'none';
+                        otpGroup.style.display = 'block';
+                        btnText.textContent = 'Verify Code';
+                        showInfo('Reset code sent to ' + email);
+                        clearOtpBoxes();
+                        otpBoxes[0].focus();
+                    }
+                    setLoading(false);
+                    return;
+                }
+
+                // === SIGN IN ===
+                if (isLoginMode) {
+                    if (!email || !password) {
+                        showError('Please fill in all required fields');
+                        setLoading(false);
+                        return;
+                    }
+                    if (password.length < 8) {
+                        showError('Password must be at least 8 characters');
+                        setLoading(false);
+                        return;
+                    }
+                    const tsToken = await waitForTurnstileToken();
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password, turnstile_token: tsToken })
+                    });
+                    const data = await response.json().catch(() => { throw new Error('Server error'); });
+                    if (!response.ok) throw new Error(data.detail || 'Authentication failed');
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showSuccess('Login successful!');
+                    setTimeout(() => { window.location.replace('/'); }, 1000);
+
+                } else if (isOtpStep) {
+                    // --- STEP 2: VERIFY OTP ---
+                    const otp = getOtpValue();
+                    if (!otp || otp.length !== 6) {
+                        showError('Please enter the 6-digit verification code');
+                        setLoading(false);
+                        return;
+                    }
+                    const response = await fetch('/api/auth/verify-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: pendingEmail, otp })
+                    });
+                    const data = await response.json().catch(() => { throw new Error('Server error'); });
+                    if (!response.ok) throw new Error(data.detail || 'Verification failed');
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showSuccess('Account created!');
+                    setTimeout(() => { window.location.replace('/'); }, 1000);
+
+                } else {
+                    // --- STEP 1: SEND OTP (Create Account) ---
+                    if (!email || !password) {
+                        showError('Please fill in all required fields');
+                        setLoading(false);
+                        return;
+                    }
+                    if (!name) {
+                        showError('Please enter your name');
+                        setLoading(false);
+                        return;
+                    }
+                    if (!isValidName(name)) {
+                        showError('Name must contain only letters and spaces');
+                        setLoading(false);
+                        return;
+                    }
+                    if (password.length < 8) {
+                        showError('Password must be at least 8 characters');
+                        setLoading(false);
+                        return;
+                    }
+                    const tsToken2 = await waitForTurnstileToken();
+                    const response = await fetch('/api/auth/send-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password, name, turnstile_token: tsToken2 })
+                    });
+                    const data = await response.json().catch(() => { throw new Error('Server error'); });
+                    if (!response.ok) throw new Error(data.detail || 'Failed to send verification code');
+                    isOtpStep = true;
+                    pendingEmail = email;
+                    emailGroup.style.display = 'none';
+                    passwordGroup.style.display = 'none';
+                    nameField.style.display = 'none';
+                    otpGroup.style.display = 'block';
+                    btnText.textContent = 'Verify & Create Account';
+                    showInfo('Verification code sent to ' + email);
+                    clearOtpBoxes();
+                    otpBoxes[0].focus();
+                }
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading(false);
+                resetTurnstile();
+            }
+        });
+
+        // Google Sign-In
+        googleBtn.addEventListener('click', () => {
+            window.location.replace('/api/auth/google/login');
+        });
+
+        // Check for error from OAuth callback redirect
+        const urlParams = new URLSearchParams(window.location.search);
+        const authError = urlParams.get('error');
+        if (authError) {
+            if (authError === 'drive_permission_required') {
+                // Show Drive permission banner instead of generic error
+                showDrivePermissionBanner();
+            } else {
+                const errorMessages = {
+                    'google_auth_failed': 'Google sign-in failed. Please try again.',
+                    'no_auth_code': 'Google sign-in was cancelled.',
+                    'user_creation_failed': 'Failed to create account. Please try again.',
+                };
+                showError(errorMessages[authError] || 'Authentication failed. Please try again.');
+            }
+        }
+
+        // Drive permission required — show a clean explainer with re-prompt button
+        function showDrivePermissionBanner() {
+            // Remove any existing banner
+            const existing = document.getElementById('drivePermissionBanner');
+            if (existing) existing.remove();
+
+            const banner = document.createElement('div');
+            banner.id = 'drivePermissionBanner';
+            banner.style.position = 'relative';
+            banner.style.marginBottom = '24px';
+            banner.innerHTML = `
+                <div style="
+                    border: 2px solid var(--text-muted);
+                    padding: 20px 24px;
+                    text-align: center;
+                ">
+                    <p style="
+                        font-size: 13px;
+                        font-weight: 600;
+                        color: var(--text-primary);
+                        margin-bottom: 6px;
+                    ">Drive access is required</p>
+                    <p style="
+                        font-size: 12px;
+                        color: var(--text-muted);
+                        line-height: 1.5;
+                        margin-bottom: 16px;
+                    ">Your files are stored in your Google Drive. Please allow access to continue.</p>
+                    <button onclick="window.location.replace('/api/auth/google/login')" style="
+                        width: 100%;
+                        padding: 14px;
+                        border: 1px solid var(--border-soft);
+                        border-radius: 4px;
+                        background: transparent;
+                        color: var(--text-secondary);
+                        font-size: 12px;
+                        font-weight: 600;
+                        font-family: inherit;
+                        cursor: pointer;
+                        transition: all 0.15s ease;
+                        letter-spacing: 0.5px;
+                    ">Try again with Google</button>
+                </div>
+            `;
+
+            // Insert banner before the Google button wrapper
+            const googleWrap = document.getElementById('googleBtnWrap');
+            if (googleWrap) {
+                googleWrap.parentNode.insertBefore(banner, googleWrap);
+                // Add top padding so the RECOMMENDED badge stays on the Google button
+                googleWrap.style.paddingTop = '12px';
+            } else {
+                document.querySelector('.auth-card').prepend(banner);
+            }
+
+            // Badge is already visible — no action needed
+        }
+
+        // Helper functions
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            successMessage.classList.remove('show');
+        }
+
+        function showInfo(message) {
+            successMessage.textContent = message;
+            successMessage.classList.add('show');
+            errorMessage.classList.remove('show');
+        }
+
+        function showSuccess(message) {
+            const overlay = document.getElementById('successOverlay');
+            const overlayText = document.getElementById('successOverlayText');
+            overlayText.textContent = message;
+            overlay.classList.add('show');
+            errorMessage.classList.remove('show');
+        }
+
+        function hideMessages() {
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+        }
+
+        function setLoading(loading) {
+            submitBtn.disabled = loading;
+            if (loading) {
+                btnText.innerHTML = '<span class="loading"></span>Please wait...';
+            } else {
+                if (isForgotMode) {
+                    if (forgotNewPwStep) btnText.textContent = 'Reset Password';
+                    else if (forgotOtpStep) btnText.textContent = 'Verify Code';
+                    else btnText.textContent = 'Send Reset Code';
+                } else if (isLoginMode) {
+                    btnText.textContent = 'Sign In';
+                } else if (isOtpStep) {
+                    btnText.textContent = 'Verify & Create Account';
+                } else {
+                    btnText.textContent = 'Send Verification Code';
+                }
+            }
+        }
+
+        // Init: show correct hints
+        updatePasswordHint();
+
+        // Check if already logged in (via Cookie)
+        fetch('/api/auth/check-cookie').then(res => {
+            if (res.ok) {
+                window.location.replace('/');
+            }
+        });
+    </script>
+</body>
+
+</html>

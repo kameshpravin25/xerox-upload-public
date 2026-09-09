@@ -1,0 +1,2276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="/js/security.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload & Print - Upload Your Document</title>
+    <meta name="description" content="Upload your documents for printing. Fast, easy, offline.">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- PDF.js for preview -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+        integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
+        crossorigin="anonymous"></script>
+
+    <!-- pdf-lib for client-side PDF processing (page extraction, rotation) -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"
+        integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI"
+        crossorigin="anonymous"></script>
+
+    <!-- Razorpay Checkout SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/index.css">
+    <script src="/js/theme.js"></script>
+
+</head>
+
+<body>
+    <script>
+        // Instant shop-closed check from cache — prevents form flash on tab switch
+        if (sessionStorage.getItem('shop_status') === 'closed') {
+            document.body.classList.add('shop-closed');
+            document.addEventListener('DOMContentLoaded', function () {
+                var b = document.getElementById('shopClosedBanner');
+                if (b) b.classList.add('visible');
+                var msg = sessionStorage.getItem('shop_message');
+                if (msg) {
+                    var m = document.getElementById('shopClosedMessage');
+                    if (m) m.textContent = msg;
+                }
+            });
+        }
+    </script>
+    <div class="container">
+        <div class="card">
+            <!-- Shop Closed Banner (overlays on form) -->
+            <div class="shop-closed-banner" id="shopClosedBanner">
+                <div class="shop-closed-title">Shop is Currently Closed</div>
+                <div class="shop-closed-divider"></div>
+                <div class="shop-closed-message" id="shopClosedMessage">We're currently unavailable. Please check back
+                    later.</div>
+            </div>
+
+            <!-- Upload Form -->
+            <div id="uploadForm">
+                <!-- Header: Logo left, User right -->
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <span class="page-title">Upload & Print</span>
+                    </div>
+                    <div id="userSection">
+                        <a href="/login" class="user-btn" id="authBtn">
+                            <span>Sign In</span>
+                        </a>
+                    </div>
+                </div>
+
+
+                <form id="form">
+                    <!-- Guest Name Input (only visible in guest mode) -->
+                    <div class="form-group" id="guestNameGroup" style="display:none;">
+                        <label for="guestName">Your Name *</label>
+                        <input type="text" id="guestName" placeholder="Enter your name"
+                            style="width:100%;padding:14px 16px;border:1px solid var(--border-soft);border-radius:12px;background:var(--surface-2);color:var(--text-primary);font-size:15px;font-family:inherit;">
+                    </div>
+                    <div class="form-group">
+                        <label for="file">Select File *</label>
+                        <div class="file-upload" id="fileDropZone">
+                            <input type="file" id="file" name="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.tiff,.doc,.docx,.ppt,.pptx,.odt,.odp,.txt,.rtf"
+                                required>
+                            <p class="file-upload-text">
+                                <strong>Click to upload</strong> or drag and drop
+                            </p>
+                            <div class="file-name-wrapper" id="fileNameWrapper">
+                                <span class="file-name" id="fileName"></span>
+                                <button type="button" class="file-remove-btn" id="fileRemoveBtn"
+                                    title="Remove file">✕</button>
+                            </div>
+                            <p class="file-types">PDF, Images, Office docs</p>
+                        </div>
+                    </div>
+
+                    <!-- PDF Preview Section (shown when PDF selected) -->
+                    <div class="pdf-preview-section" id="pdfPreviewSection">
+                        <div class="pdf-preview-header">
+                            <span class="pdf-preview-title">Pages <span id="selectedCount">0</span>/<span
+                                    id="totalPages">0</span> selected</span>
+                            <div class="pdf-preview-actions">
+                                <button type="button" class="pdf-action-btn" id="selectAllBtn">Select All</button>
+                                <button type="button" class="pdf-action-btn" id="deselectAllBtn">Clear</button>
+                            </div>
+                        </div>
+                        <div id="pdfThumbnails" class="pdf-thumbnail-grid"></div>
+                        <div class="page-range-input">
+                            <input type="text" id="pageRange" placeholder="Page range: 1-5, 8, 10-12" autocomplete="off"
+                                inputmode="text">
+                        </div>
+                    </div>
+
+                    <!-- Print Options -->
+                    <div class="print-options">
+                        <div class="options-header" id="optionsHeader">
+                            <span class="options-title">Print Options</span>
+                        </div>
+                        <div class="options-grid" id="optionsGrid">
+                            <div class="option-group">
+                                <span class="option-label">Color</span>
+                                <div class="toggle-group">
+                                    <button type="button" class="toggle-btn active" data-option="colorMode"
+                                        data-value="bw">B/W</button>
+                                    <button type="button" class="toggle-btn" data-option="colorMode"
+                                        data-value="color">Color</button>
+                                </div>
+                            </div>
+                            <div class="option-group">
+                                <span class="option-label">Sides</span>
+                                <div class="toggle-group">
+                                    <button type="button" class="toggle-btn active" data-option="duplex"
+                                        data-value="false">Single</button>
+                                    <button type="button" class="toggle-btn" data-option="duplex"
+                                        data-value="true">Double</button>
+                                </div>
+                            </div>
+                            <div class="option-group">
+                                <span class="option-label">Paper Size</span>
+                                <div class="custom-select" id="paperSizeDropdown">
+                                    <div class="custom-select-trigger" id="paperSizeTrigger">
+                                        <span id="paperSizeLabel">A4 (Standard)</span>
+                                        <svg class="custom-select-arrow" viewBox="0 0 24 24" width="16" height="16"
+                                            fill="currentColor">
+                                            <path d="M7 10l5 5 5-5z" />
+                                        </svg>
+                                    </div>
+                                    <div class="custom-select-options" id="paperSizeOptions">
+                                        <div class="custom-select-option selected" data-value="A4">A4 (Standard)</div>
+                                        <div class="custom-select-option" data-value="A3" data-unavailable style="opacity:0.35;cursor:not-allowed">A3 (Large) <span style="color:var(--text-muted);font-size:10px;margin-left:4px">Not Available</span></div>
+                                        <div class="custom-select-option" data-value="Letter" data-unavailable style="opacity:0.35;cursor:not-allowed">Letter <span style="color:var(--text-muted);font-size:10px;margin-left:4px">Not Available</span></div>
+                                        <div class="custom-select-option" data-value="Legal" data-unavailable style="opacity:0.35;cursor:not-allowed">Legal <span style="color:var(--text-muted);font-size:10px;margin-left:4px">Not Available</span></div>
+                                    </div>
+                                    <select id="paperSize" style="display:none">
+                                        <option value="A4">A4 (Standard)</option>
+                                        <option value="A3">A3 (Large) 2×</option>
+                                        <option value="Letter">Letter</option>
+                                        <option value="Legal">Legal 1.2×</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="option-group">
+                                <span class="option-label">Binding</span>
+                                <div class="custom-select" id="bindingDropdown">
+                                    <div class="custom-select-trigger" id="bindingTrigger">
+                                        <span id="bindingLabel">No Binding</span>
+                                        <svg class="custom-select-arrow" viewBox="0 0 24 24" width="16" height="16"
+                                            fill="currentColor">
+                                            <path d="M7 10l5 5 5-5z" />
+                                        </svg>
+                                    </div>
+                                    <div class="custom-select-options" id="bindingOptions">
+                                        <div class="custom-select-option selected" data-value="none">No Binding</div>
+                                        <div class="custom-select-option" data-value="staple" data-unavailable style="opacity:0.35;cursor:not-allowed">Staple <span style="color:var(--text-muted);font-size:10px;margin-left:4px">Not Available</span></div>
+                                        <div class="custom-select-option" data-value="spiral" data-unavailable style="opacity:0.35;cursor:not-allowed">Spiral <span style="color:var(--text-muted);font-size:10px;margin-left:4px">Not Available</span></div>
+                                        <div class="custom-select-option" data-value="hardcover" data-unavailable style="opacity:0.35;cursor:not-allowed">Hard Cover <span style="color:var(--text-muted);font-size:10px;margin-left:4px">Not Available</span></div>
+                                    </div>
+                                    <select id="binding" style="display:none">
+                                        <option value="none">No Binding</option>
+                                        <option value="staple">Staple (+₹1)</option>
+                                        <option value="spiral">Spiral (+₹5)</option>
+                                        <option value="hardcover">Hard Cover (+₹20)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="option-group">
+                                <span class="option-label">Copies</span>
+                                <div class="copies-control">
+                                    <button type="button" class="copies-btn minus" id="copiesMinus">−</button>
+                                    <input type="number" id="copies" value="1" min="1" max="100">
+                                    <button type="button" class="copies-btn plus" id="copiesPlus">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Price Display -->
+                    <div class="price-display" id="priceDisplay">
+                        <div class="price-label">Estimated Price</div>
+                        <div class="price-amount" id="priceAmount">₹0.00</div>
+                        <div class="price-breakdown" id="priceBreakdown"></div>
+                        <div class="price-warning" id="priceWarning" style="display:none;"></div>
+                    </div>
+
+
+
+                    <div class="form-group" id="passphraseGroup" style="display: none;">
+                        <label for="passphrase">Access Code</label>
+                        <input type="password" id="passphrase" name="passphrase" placeholder="Enter access code">
+                    </div>
+
+                    <div class="form-actions" style="display: flex; margin-top: 1rem;">
+                        <button type="submit" class="submit-btn" id="submitBtn" style="flex:1;">
+                            Add to Cart
+                        </button>
+                    </div>
+
+                    <!-- Cart Container -->
+                    <div id="cartContainer" class="cart-container">
+                        <div class="cart-header">
+                            <span>Current Order</span>
+                            <span id="cartCountBadge">0 Items</span>
+                        </div>
+                        <div id="cartItems" class="cart-list"></div>
+                    </div>
+
+                    <div class="pay-action" style="margin-top: 0;">
+                        <button type="button" id="mainCheckoutBtn" class="submit-btn checkout-pay-btn"
+                            style="display:none; width:100%;" disabled>
+                            Pay Now
+                        </button>
+                    </div>
+
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="progressFill"></div>
+                        </div>
+                        <p class="progress-text" id="progressText">Uploading...</p>
+                    </div>
+
+                    <div class="error-message" id="errorMessage"></div>
+                </form>
+
+                <div class="footer">
+                    Upload · Print · Collect
+                </div>
+            </div>
+
+            <!-- Success Result -->
+            <div id="resultView" class="result">
+                <div class="success-container">
+                    <div class="success-check-ring">
+                        <svg class="success-checkmark" viewBox="0 0 52 52">
+                            <circle class="success-check-circle" cx="26" cy="26" r="25" fill="none" />
+                            <path class="success-check-path" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                        </svg>
+                    </div>
+                    <h2 id="resultTitle" class="success-title">Payment Successful!</h2>
+                    <p class="success-subtitle">Your Order Number</p>
+                    <div class="success-ticket-card">
+                        <span class="success-ticket-num" id="ticketNumber">007</span>
+                    </div>
+                    <p class="success-hint">Show this number at the counter</p>
+                    <div class="success-amount-bar" id="resultEstimate"></div>
+                    <p class="success-ready" id="resultInstruction">Your documents will be ready shortly.</p>
+                    <button class="success-new-btn" id="newUploadBtn">Add File</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load estimator and preview modules -->
+    <script src="/js/estimator.js"></script>
+    <!-- Removed Bottom Checkout Bar -->
+
+    <script src="/js/pdf-preview.js"></script>
+
+    <script>
+        // DOM Elements
+        const form = document.getElementById('form');
+        const uploadFormView = document.getElementById('uploadForm');
+        const resultView = document.getElementById('resultView');
+        const fileInput = document.getElementById('file');
+        const fileDropZone = document.getElementById('fileDropZone');
+        const fileName = document.getElementById('fileName');
+        const fileNameWrapper = document.getElementById('fileNameWrapper');
+        const submitBtn = document.getElementById('submitBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const errorMessage = document.getElementById('errorMessage');
+        const ticketNumber = document.getElementById('ticketNumber');
+        const newUploadBtn = document.getElementById('newUploadBtn');
+        const priceAmount = document.getElementById('priceAmount');
+        const priceBreakdown = document.getElementById('priceBreakdown');
+        const priceWarning = document.getElementById('priceWarning');
+        const pdfPreviewSection = document.getElementById('pdfPreviewSection');
+        const selectedCountEl = document.getElementById('selectedCount');
+        const totalPagesEl = document.getElementById('totalPages');
+        const resultEstimate = document.getElementById('resultEstimate');
+
+        // Initialize cost estimator
+        const estimator = new CostEstimator();
+        let pdfPreview = null;
+        let isEstimated = false;
+        let isCountingPages = false;
+
+        // Cart State
+        let cart = [];
+        const checkoutBtn = document.getElementById('mainCheckoutBtn');
+        const cartContainer = document.getElementById('cartContainer');
+        const cartItemsEl = document.getElementById('cartItems');
+        const cartCountBadge = document.getElementById('cartCountBadge');
+
+        // Helper: Enable/disable duplex (double-side) option based on page count
+        // Double-side printing makes no sense for a single page
+        function updateDuplexAvailability(pageCount) {
+            const duplexBtns = document.querySelectorAll('.toggle-btn[data-option="duplex"]');
+            const doubleBtn = Array.from(duplexBtns).find(b => b.dataset.value === 'true');
+            const singleBtn = Array.from(duplexBtns).find(b => b.dataset.value === 'false');
+            if (!doubleBtn || !singleBtn) return;
+
+            if (pageCount <= 1) {
+                // Disable double-side and force single
+                doubleBtn.disabled = true;
+                doubleBtn.classList.add('duplex-disabled');
+                if (doubleBtn.classList.contains('active')) {
+                    doubleBtn.classList.remove('active');
+                    singleBtn.classList.add('active');
+                    estimator.setOption('duplex', false);
+                }
+            } else {
+                // Re-enable double-side
+                doubleBtn.disabled = false;
+                doubleBtn.classList.remove('duplex-disabled');
+            }
+        }
+
+        // Load pricing and initialize
+        async function init() {
+            await estimator.loadPricing();
+
+            // Set up price update callback
+            estimator.onEstimateChange = (cents, formatted, breakdown) => {
+                // Suppress price display while server is counting exact pages
+                if (isCountingPages) {
+                    priceAmount.textContent = '—';
+                    priceBreakdown.textContent = '';
+                    return;
+                }
+                priceAmount.textContent = formatted;
+                if (breakdown) {
+                    let breakdownText;
+                    if (breakdown.isDuplex) {
+                        breakdownText = `${breakdown.sheets} sheets × ${estimator.formatPrice(breakdown.pricePerUnit)}/sheet`;
+                    } else {
+                        breakdownText = `${breakdown.pages} pages × ${estimator.formatPrice(breakdown.pricePerUnit)}/page`;
+                    }
+                    breakdownText += (breakdown.copies > 1 ? ` × ${breakdown.copies} copies` : '');
+                    breakdownText += (breakdown.bindingCost > 0 ? ` + binding` : '');
+                    priceBreakdown.textContent = breakdownText;
+                }
+            };
+
+            // Initialize PDF preview
+            if (window.pdfjsLib) {
+                pdfPreview = new PDFPreview('pdfThumbnails');
+                pdfPreview.onPageCountChange = (count) => {
+                    totalPagesEl.textContent = count;
+                    selectedCountEl.textContent = count;
+                    // Reset selection state so estimator uses full page count (not stale previous selection)
+                    estimator.setOption('pageRange', 'all');
+                    estimator.setOption('selectedPages', []);
+                    estimator.setPageCount(count);
+                    updateDuplexAvailability(count);
+                };
+                pdfPreview.onSelectionChange = (pages) => {
+                    selectedCountEl.textContent = pages.length;
+                    estimator.setOption('selectedPages', pages);
+                    estimator.setOption('pageRange', pages.length < pdfPreview.getPageCount() ? 'custom' : 'all');
+                    estimator.setPageCount(pages.length);
+                    updateDuplexAvailability(pages.length);
+                };
+            }
+
+            // Restore cart from localStorage after pricing is loaded
+            loadCartFromStorage();
+
+            // Validate cart items — remove any that were already paid
+            // (handles case where user closed tab during payment verification)
+            await validateCartItems();
+
+            // Check if a payment was in-progress when the page was closed
+            await checkPendingPayment();
+
+            // Check if shop is open
+            await checkShopStatus();
+        }
+        init();
+
+        // Shop status check — blocks uploads when shop is closed
+        async function checkShopStatus() {
+            try {
+                const res = await fetch('/api/shop/status');
+                const data = await res.json();
+                if (data.status === 'closed') {
+                    sessionStorage.setItem('shop_status', 'closed');
+                    sessionStorage.setItem('shop_message', data.message || '');
+                    applyShopClosed(data.message);
+                } else {
+                    sessionStorage.setItem('shop_status', 'open');
+                    sessionStorage.removeItem('shop_message');
+                    // In case it was cached as closed but now open
+                    document.body.classList.remove('shop-closed');
+                    document.getElementById('shopClosedBanner').classList.remove('visible');
+                }
+            } catch (e) {
+                console.warn('Could not check shop status:', e);
+            }
+        }
+
+        function applyShopClosed(message) {
+            document.body.classList.add('shop-closed');
+            const banner = document.getElementById('shopClosedBanner');
+            banner.classList.add('visible');
+            if (message) {
+                document.getElementById('shopClosedMessage').textContent = message;
+            }
+            if (typeof submitBtn !== 'undefined' && submitBtn) submitBtn.disabled = true;
+            if (typeof checkoutBtn !== 'undefined' && checkoutBtn) checkoutBtn.disabled = true;
+        }
+
+        // --- Cart persistence via localStorage (signed-in users only) ---
+        // Cart items persist across tab switches and app restarts.
+        // Items are only removed when user clicks ✕ or after successful payment.
+        // Guest (non-signed-in) users do NOT get cart persistence.
+        function isSignedIn() {
+            return !!localStorage.getItem('user');
+        }
+
+        function saveCartToStorage() {
+            if (!isSignedIn()) return; // Guest users: no persistence
+            try {
+                // Save cart without non-serializable fields (blob preview URLs)
+                const serializable = cart.map(item => ({
+                    ticket: item.ticket,
+                    token: item.token,
+                    filename: item.filename,
+                    metadata: item.metadata,
+                    price_cents: item.price_cents,
+                    type: item.type
+                    // preview (blob URL) is NOT saved — will show PDF icon on restore
+                }));
+                localStorage.setItem('xerox_cart', JSON.stringify(serializable));
+            } catch (e) { console.warn('Failed to save cart:', e); }
+        }
+
+        function loadCartFromStorage() {
+            if (!isSignedIn()) return; // Guest users: no persistence
+            try {
+                const saved = localStorage.getItem('xerox_cart');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        // Filter out stale cart items from previous days
+                        // Ticket format: YYYYMMDD-NNN, so first 8 chars = date
+                        const today = new Date();
+                        const todayPrefix = today.getFullYear().toString() +
+                            String(today.getMonth() + 1).padStart(2, '0') +
+                            String(today.getDate()).padStart(2, '0');
+
+                        const validItems = parsed.filter(item => {
+                            if (!item.ticket) return false;
+                            const ticketDate = item.ticket.substring(0, 8);
+                            return ticketDate === todayPrefix;
+                        });
+
+                        if (validItems.length < parsed.length) {
+                            console.info(`Cleared ${parsed.length - validItems.length} stale cart item(s) from previous day(s)`);
+                        }
+
+                        if (validItems.length > 0) {
+                            cart = validItems.map(item => ({
+                                ...item,
+                                preview: null // Blob URLs don't survive across sessions
+                            }));
+                            renderCart();
+                            // Update submit button text if cart has items
+                            if (cart.length > 0) {
+                                submitBtn.textContent = 'Add File';
+                                submitBtn.classList.add('btn-add-file');
+                            }
+                        } else {
+                            // All items were stale — clear storage
+                            clearCartStorage();
+                        }
+                    }
+                }
+            } catch (e) { console.warn('Failed to load cart:', e); }
+        }
+
+        // Validate cart items on page load — remove any that are already paid
+        async function validateCartItems() {
+            if (cart.length === 0) return;
+            try {
+                const tickets = cart.map(item => item.ticket);
+                const res = await fetch('/api/jobs/status-check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                    body: JSON.stringify({ tickets })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    // data.paid_tickets = list of tickets already in 'paid' status
+                    if (data.paid_tickets && data.paid_tickets.length > 0) {
+                        const paidSet = new Set(data.paid_tickets);
+                        const before = cart.length;
+                        cart = cart.filter(item => !paidSet.has(item.ticket));
+                        if (cart.length < before) {
+                            console.info(`Removed ${before - cart.length} already-paid item(s) from cart`);
+                            renderCart();
+                            saveCartToStorage();
+                            if (cart.length === 0) {
+                                submitBtn.textContent = 'Add to Cart';
+                                submitBtn.classList.remove('btn-add-file');
+                            }
+                        }
+                    }
+                }
+            } catch (e) { console.warn('Cart validation failed:', e); }
+        }
+
+        function clearCartStorage() {
+            localStorage.removeItem('xerox_cart');
+        }
+
+        // Pending payment recovery — check if user closed tab during payment verification
+        async function checkPendingPayment() {
+            try {
+                const pending = localStorage.getItem('pending_payment');
+                if (!pending) return;
+                const info = JSON.parse(pending);
+                if (!info.ticket) return;
+
+                // Check if this job is now paid (webhook may have processed it)
+                const res = await fetch('/api/jobs/status-check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                    body: JSON.stringify({ tickets: [info.ticket] })
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.paid_tickets && data.paid_tickets.includes(info.ticket)) {
+                    // Payment was completed by webhook — show the ack page
+                    localStorage.removeItem('pending_payment');
+                    clearCartStorage();
+                    cart = [];
+                    renderCart();
+                    showSuccess(info.ticket, { client_estimate_cents: info.amount_cents }, true);
+                    console.info('Recovered pending payment — showing ack page');
+                }
+                // If not paid yet, don't clear — user might return to pay
+            } catch (e) { console.warn('Pending payment check failed:', e); }
+        }
+
+
+        // Helper: revert job statuses from pending_payment back to draft
+        async function revertPaymentToDraft(tickets) {
+            try {
+                await fetch('/api/payment/revert-to-draft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                    body: JSON.stringify({ tickets: tickets })
+                });
+            } catch (e) { console.warn('Failed to revert payment status:', e); }
+        }
+
+        // Toggle options panel (collapsed by default)
+        // Toggle options panel - REMOVED (Always visible)
+        const optionsHeader = document.getElementById('optionsHeader');
+
+        // optionsHeader.addEventListener('click', () => { ... });
+
+        // Toggle buttons for options
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.disabled) return; // Skip disabled buttons (e.g. duplex on single page)
+                const group = btn.parentElement;
+                group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const option = btn.dataset.option;
+                let value = btn.dataset.value;
+                if (value === 'true') value = true;
+                if (value === 'false') value = false;
+
+                estimator.setOption(option, value);
+            });
+        });
+
+        // Custom paper size dropdown
+        (function () {
+            const dropdown = document.getElementById('paperSizeDropdown');
+            const trigger = document.getElementById('paperSizeTrigger');
+            const options = document.getElementById('paperSizeOptions');
+            const label = document.getElementById('paperSizeLabel');
+            const hiddenSelect = document.getElementById('paperSize');
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Close other custom selects
+                document.querySelectorAll('.custom-select.open').forEach(s => {
+                    if (s !== dropdown) s.classList.remove('open');
+                });
+                dropdown.classList.toggle('open');
+            });
+
+            options.querySelectorAll('.custom-select-option').forEach(opt => {
+                opt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (opt.hasAttribute('data-unavailable')) return;
+                    const value = opt.dataset.value;
+                    options.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    label.textContent = opt.textContent.trim();
+                    hiddenSelect.value = value;
+                    estimator.setOption('paperSize', value);
+                    dropdown.classList.remove('open');
+                });
+            });
+
+            document.addEventListener('click', () => {
+                dropdown.classList.remove('open');
+            });
+        })();
+        // Custom binding dropdown
+        (function () {
+            const dropdown = document.getElementById('bindingDropdown');
+            const trigger = document.getElementById('bindingTrigger');
+            const options = document.getElementById('bindingOptions');
+            const label = document.getElementById('bindingLabel');
+            const hiddenSelect = document.getElementById('binding');
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.custom-select.open').forEach(s => {
+                    if (s !== dropdown) s.classList.remove('open');
+                });
+                dropdown.classList.toggle('open');
+            });
+
+            options.querySelectorAll('.custom-select-option').forEach(opt => {
+                opt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (opt.hasAttribute('data-unavailable')) return;
+                    const value = opt.dataset.value;
+                    // Update visual
+                    options.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    label.textContent = opt.textContent.trim().split('(')[0].trim();
+                    // Update hidden select + estimator
+                    hiddenSelect.value = value;
+                    estimator.setOption('binding', value);
+                    dropdown.classList.remove('open');
+                });
+            });
+
+            document.addEventListener('click', () => {
+                dropdown.classList.remove('open');
+            });
+        })();
+
+        // Copies — allow typing + input validation
+        document.getElementById('copies').addEventListener('input', (e) => {
+            let val = parseInt(e.target.value);
+            if (!isNaN(val) && val >= 1 && val <= 100) {
+                estimator.setOption('copies', val);
+            }
+        });
+        document.getElementById('copies').addEventListener('blur', (e) => {
+            let val = parseInt(e.target.value) || 1;
+            val = Math.max(1, Math.min(100, val));
+            e.target.value = val;
+            estimator.setOption('copies', val);
+        });
+
+        // Copies +/- button handlers
+        document.getElementById('copiesMinus').addEventListener('click', () => {
+            const copiesInput = document.getElementById('copies');
+            let val = parseInt(copiesInput.value) || 1;
+            if (val > 1) {
+                copiesInput.value = val - 1;
+                estimator.setOption('copies', val - 1);
+            }
+        });
+
+        document.getElementById('copiesPlus').addEventListener('click', () => {
+            const copiesInput = document.getElementById('copies');
+            let val = parseInt(copiesInput.value) || 1;
+            if (val < 100) {
+                copiesInput.value = val + 1;
+                estimator.setOption('copies', val + 1);
+            }
+        });
+
+        // Page range input (debounced for fast typing)
+        let pageRangeTimer = null;
+        document.getElementById('pageRange').addEventListener('input', (e) => {
+            if (pageRangeTimer) clearTimeout(pageRangeTimer);
+            pageRangeTimer = setTimeout(() => {
+                if (pdfPreview && pdfPreview.getPageCount() > 0) {
+                    pdfPreview.setPageRange(e.target.value);
+                }
+            }, 150);
+        });
+
+        // PDF preview buttons
+        document.getElementById('selectAllBtn').addEventListener('click', () => {
+            if (pdfPreview) pdfPreview.selectAll();
+        });
+        document.getElementById('deselectAllBtn').addEventListener('click', () => {
+            if (pdfPreview) pdfPreview.deselectAll();
+        });
+
+        // File handling
+        fileInput.addEventListener('change', handleFileSelect);
+
+        fileDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.add('dragover');
+        });
+
+        fileDropZone.addEventListener('dragleave', () => {
+            fileDropZone.classList.remove('dragover');
+        });
+
+        fileDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+
+        async function handleFileSelect() {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+
+                // Validate file type (also catches drag & drop which bypasses accept attribute)
+                const allowedExts = ['pdf', 'jpg', 'jpeg', 'png', 'tiff', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'txt', 'rtf'];
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (!allowedExts.includes(ext)) {
+                    showError(`File type .${ext} is not allowed. Accepted: PDF, Images, Office docs.`);
+                    fileInput.value = '';
+                    fileName.textContent = '';
+                    fileNameWrapper.classList.remove('visible');
+                    fileDropZone.classList.remove('has-file');
+                    return;
+                }
+
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                fileName.textContent = `${file.name} (${sizeMB} MB)`;
+                fileNameWrapper.classList.add('visible');
+                fileDropZone.classList.add('has-file');
+                window._pagesPreCounted = false;
+
+                // Handle PDF preview
+                if (ext === 'pdf' && pdfPreview) {
+                    pdfPreviewSection.style.display = 'block';
+                    pdfPreviewSection.classList.add('loading-pdf');
+                    priceWarning.style.display = 'none';
+                    isEstimated = false;
+
+                    // Show skeleton placeholders IMMEDIATELY while PDF loads
+                    // (loadPDF's file.arrayBuffer + getDocument can take seconds for large files)
+                    const thumbGrid = document.getElementById('pdfThumbnails');
+                    if (thumbGrid) {
+                        thumbGrid.innerHTML = '';
+                        thumbGrid.className = 'pdf-thumbnail-grid';
+                        const previewCount = 2; // Show 2 placeholder pages initially
+                        for (let s = 0; s < previewCount; s++) {
+                            const sk = document.createElement('div');
+                            sk.className = 'pdf-thumbnail-skeleton';
+                            thumbGrid.appendChild(sk);
+                        }
+                    }
+
+                    const result = await pdfPreview.loadPDF(file);
+                    pdfPreviewSection.classList.remove('loading-pdf');
+
+                    if (!result.success) {
+                        // If this load was superseded by a newer file selection, silently ignore
+                        if (result.error === 'superseded') return;
+
+                        pdfPreviewSection.style.display = 'none';
+                        pdfPreview.clear();
+                        // Clear the selected file
+                        fileInput.value = '';
+                        fileNameEl.textContent = '';
+                        fileNameEl.style.display = 'none';
+                        removeBtn.style.display = 'none';
+
+                        if (result.error === 'password_protected') {
+                            showError('This PDF is password-protected. Please unlock it and try again.');
+                        } else {
+                            showError('Could not read this PDF. The file may be damaged.');
+                        }
+                        return;
+                    }
+                } else {
+                    pdfPreviewSection.style.display = 'none';
+                    if (pdfPreview) pdfPreview.clear();
+
+                    // Estimate pages for non-PDF files
+                    const detection = await detectPageCount(file);
+                    const detectedCount = detection.count || 1;
+
+                    // If server needs to count exact pages, block price display + button
+                    if (detection.estimated) {
+                        isCountingPages = true;
+                        submitBtn.disabled = true;
+                    }
+
+                    // Reset stale PDF selection state
+                    estimator.setOption('pageRange', 'all');
+                    estimator.setOption('selectedPages', []);
+                    estimator.setPageCount(detectedCount);
+                    updateDuplexAvailability(detectedCount);
+
+                    if (detection.estimated) {
+                        // Show loading state while server counts pages
+                        priceAmount.textContent = '—';
+                        priceBreakdown.textContent = '';
+                        priceWarning.textContent = 'Counting pages...';
+                        priceWarning.style.display = 'block';
+                        priceWarning.classList.add('info-message');
+                        priceWarning.classList.remove('warn-message');
+                        isEstimated = true;
+
+                        // Send file to server for exact page count
+                        try {
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            const countResp = await fetch('/api/count-pages', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            if (countResp.ok) {
+                                const countData = await countResp.json();
+                                if (countData.pages && countData.pages > 0) {
+                                    // Unlock BEFORE setPageCount so price callback can display
+                                    isCountingPages = false;
+                                    submitBtn.disabled = false;
+                                    estimator.setPageCount(countData.pages);
+                                    updateDuplexAvailability(countData.pages);
+                                    isEstimated = false;
+                                    window._pagesPreCounted = true;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('Page count failed:', e);
+                        }
+                        // Always clean up after counting attempt
+                        if (isCountingPages) {
+                            // Count failed or returned no data — fall back to estimated count
+                            isCountingPages = false;
+                            submitBtn.disabled = false;
+                            // Re-trigger price with estimated count (was suppressed during counting)
+                            estimator.setPageCount(detectedCount);
+                        }
+                        priceWarning.style.display = 'none';
+                        priceWarning.classList.remove('info-message');
+                    } else {
+                        priceWarning.style.display = 'none';
+                        priceWarning.classList.remove('info-message');
+                        isEstimated = false;
+                    }
+                }
+            } else {
+                fileName.textContent = '';
+                fileNameWrapper.classList.remove('visible');
+                fileDropZone.classList.remove('has-file');
+                pdfPreviewSection.style.display = 'none';
+                if (pdfPreview) pdfPreview.clear();
+                estimator.setPageCount(0);
+                updateDuplexAvailability(0);
+            }
+        }
+
+        // X button to remove selected file
+        document.getElementById('fileRemoveBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isCountingPages = false;
+            fileInput.value = '';
+            fileName.textContent = '';
+            fileNameWrapper.classList.remove('visible');
+            fileDropZone.classList.remove('has-file');
+            pdfPreviewSection.style.display = 'none';
+            if (pdfPreview) pdfPreview.clear();
+            estimator.setPageCount(0);
+            updateDuplexAvailability(0);
+            priceWarning.style.display = 'none';
+            isEstimated = false;
+            submitBtn.disabled = false;
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // REQUIRE LOGIN - check if user is authenticated (skip for guests)
+            const authToken = localStorage.getItem('access_token');
+            const userInfo = localStorage.getItem('user');
+            const isGuest = new URLSearchParams(window.location.search).get('guest') === '1'
+                || sessionStorage.getItem('guest_mode') === '1';
+            if (!authToken && !userInfo && !isGuest) {
+                alert('Please sign in to upload files.');
+                window.location.href = '/login';
+                return;
+            }
+            if (isGuest) sessionStorage.setItem('guest_mode', '1');
+
+            let file = fileInput.files[0];
+            if (!file) {
+                showError('Please select a file');
+                return;
+            }
+
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            // For guests, require name and format as 'Guest (Name)'
+            const guestNameInput = document.getElementById('guestName');
+            let sender;
+            if (isGuest) {
+                const guestName = guestNameInput ? guestNameInput.value.trim() : '';
+                if (!guestName) {
+                    showError('Please enter your name');
+                    if (guestNameInput) guestNameInput.focus();
+                    return;
+                }
+                sender = `Guest (${guestName})`;
+            } else {
+                sender = user.name || 'Guest';
+            }
+            const email = user.email || '';
+            const phone = user.phone || '';
+            const passphrase = document.getElementById('passphrase').value || '';
+
+            // Job metadata
+            const jobMetadata = {
+                color_mode: estimator.options.colorMode,
+                duplex: estimator.options.duplex,
+                paper_size: estimator.options.paperSize,
+                binding: estimator.options.binding,
+                copies: estimator.options.copies,
+                client_estimate_cents: estimator.calculateCostCents(),
+                pages_pre_counted: !!window._pagesPreCounted
+            };
+
+            let pageList = null;
+            let rotations = null;
+            if (pdfPreview && pdfPreview.getPageCount() > 0) {
+                const pdfMeta = pdfPreview.getJobMetadata();
+                pageList = pdfMeta.page_list;
+                rotations = pdfMeta.rotations;
+                jobMetadata.page_list = pageList;
+                jobMetadata.rotations = rotations;
+
+                // Ensure at least 1 page is selected
+                if (!pageList || pageList.length === 0) {
+                    showError('Please select at least 1 page to print.');
+                    return;
+                }
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.classList.add('btn-loading');
+            fileDropZone.classList.add('processing');
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+            errorMessage.style.display = 'none';
+
+            // Parent ticket for bulk orders
+            const parentTicket = cart.length > 0 ? cart[0].ticket : null;
+
+            try {
+                // Client-side PDF processing if pages are selected
+                const isPDF = file.name.toLowerCase().endsWith('.pdf');
+                const hasPageSelection = pageList && pageList.length > 0 && pdfPreview && pageList.length < pdfPreview.getPageCount();
+                const hasRotations = rotations && Object.keys(rotations).length > 0;
+
+                if (isPDF && (hasPageSelection || hasRotations)) {
+                    progressText.textContent = 'Processing PDF in browser...';
+                    progressFill.style.width = '5%';
+
+                    try {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const { PDFDocument, degrees } = PDFLib;
+                        const srcDoc = await PDFDocument.load(arrayBuffer);
+                        const pdfDoc = await PDFDocument.create();
+
+                        // Determine which pages to include
+                        const pagesToInclude = pageList && pageList.length > 0
+                            ? pageList.map(p => p - 1) // Convert to 0-indexed
+                            : Array.from({ length: srcDoc.getPageCount() }, (_, i) => i);
+
+                        // Copy selected pages
+                        const copiedPages = await pdfDoc.copyPages(srcDoc, pagesToInclude);
+
+                        for (let i = 0; i < copiedPages.length; i++) {
+                            const page = copiedPages[i];
+                            const originalPageNum = pagesToInclude[i] + 1; // 1-indexed for rotation lookup
+
+                            // Apply rotation if specified
+                            if (rotations && rotations[originalPageNum]) {
+                                const rotation = rotations[originalPageNum];
+                                const currentRotation = page.getRotation().angle;
+                                page.setRotation(degrees(currentRotation + rotation));
+                            }
+
+                            pdfDoc.addPage(page);
+                        }
+
+                        const processedBytes = await pdfDoc.save();
+                        const processedBlob = new Blob([processedBytes], { type: 'application/pdf' });
+
+                        // Create new file object with processed PDF
+                        const baseName = file.name.replace(/\.pdf$/i, '');
+                        file = new File([processedBlob], `${baseName}_processed.pdf`, { type: 'application/pdf' });
+
+                        // Clear page_list and rotations since already processed
+                        jobMetadata.page_list = null;
+                        jobMetadata.rotations = null;
+                        jobMetadata.client_processed = true;
+
+                        console.log(`PDF processed: ${pagesToInclude.length} pages, size: ${file.size} bytes`);
+                        progressFill.style.width = '10%';
+                    } catch (pdfError) {
+                        console.error('Client-side PDF processing failed:', pdfError);
+                        // Fall back to server-side processing
+                        progressText.textContent = 'Continuing with server processing...';
+                    }
+                }
+
+                progressText.textContent = 'Getting upload URL...';
+
+                // Step 1: Get signed URL from backend
+                const signedUrlResponse = await fetch('/api/upload/get-signed-url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({
+                        filename: file.name,
+                        content_type: file.type || 'application/octet-stream',
+                        sender: sender,
+                        phone: phone,
+                        passphrase: passphrase,
+                        job_metadata: JSON.stringify(jobMetadata),
+                        parent_ticket: parentTicket
+                    })
+                });
+
+                if (!signedUrlResponse.ok) {
+                    const errorData = await signedUrlResponse.json();
+                    throw new Error(errorData.detail || 'Failed to prepare upload');
+                }
+
+                const signedUrlData = await signedUrlResponse.json();
+                const { ticket, upload_mode } = signedUrlData;
+
+                let response;
+
+                if (upload_mode === 'drive') {
+                    // ===== Google Drive Upload Flow =====
+                    // File goes through backend to user's Google Drive
+                    progressFill.style.width = '15%';
+                    progressText.textContent = 'Uploading to Google Drive...';
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('ticket', ticket);
+                    formData.append('sender', sender);
+                    formData.append('phone', phone || '');
+                    formData.append('passphrase', passphrase || '');
+                    formData.append('job_metadata', JSON.stringify(jobMetadata));
+
+                    // Use XMLHttpRequest for progress tracking
+                    response = await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+
+                        xhr.upload.addEventListener('progress', (e) => {
+                            if (e.lengthComputable) {
+                                const percent = 15 + Math.round((e.loaded / e.total) * 80);
+                                progressFill.style.width = percent + '%';
+                                progressText.textContent = `Uploading to Google Drive... ${percent}%`;
+                            }
+                        });
+
+                        xhr.addEventListener('load', () => {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                try {
+                                    resolve(JSON.parse(xhr.responseText));
+                                } catch (e) {
+                                    reject(new Error('Invalid server response'));
+                                }
+                            } else {
+                                try {
+                                    const err = JSON.parse(xhr.responseText);
+                                    reject(new Error(err.detail || 'Drive upload failed'));
+                                } catch (e) {
+                                    reject(new Error('Drive upload failed'));
+                                }
+                            }
+                        });
+
+                        xhr.addEventListener('error', () => {
+                            reject(new Error('Network error during Drive upload'));
+                        });
+
+                        xhr.open('POST', '/api/upload/drive');
+                        // Include auth token via cookie (already set) — no explicit header needed
+                        // But add Authorization header if available
+                        if (authToken) {
+                            xhr.setRequestHeader('Authorization', 'Bearer ' + authToken);
+                        }
+                        xhr.send(formData);
+                    });
+
+                } else {
+                    // ===== Supabase Signed URL Upload Flow =====
+                    const { storage_filename, signed_url, token } = signedUrlData;
+
+                    progressFill.style.width = '15%';
+                    progressText.textContent = 'Uploading to storage...';
+
+                    // Step 2: Upload directly to Supabase using XMLHttpRequest for progress
+                    await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+
+                        xhr.upload.addEventListener('progress', (e) => {
+                            if (e.lengthComputable) {
+                                // Scale from 15% to 90%
+                                const percent = 15 + Math.round((e.loaded / e.total) * 75);
+                                progressFill.style.width = percent + '%';
+                                progressText.textContent = `Uploading... ${percent}%`;
+                            }
+                        });
+
+                        xhr.addEventListener('load', () => {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                resolve();
+                            } else {
+                                console.error('Upload failed:', xhr.status, xhr.responseText);
+                                reject(new Error('Upload to storage failed'));
+                            }
+                        });
+
+                        xhr.addEventListener('error', () => {
+                            reject(new Error('Network error during upload'));
+                        });
+
+                        // Upload to signed URL
+                        xhr.open('PUT', signed_url);
+                        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+                        if (token) {
+                            xhr.setRequestHeader('x-upsert', 'true');
+                        }
+                        xhr.send(file);
+                    });
+
+                    progressFill.style.width = '90%';
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const officeExts = ['doc','docx','xls','xlsx','ppt','pptx','odt','ods','odp','txt','rtf'];
+                    progressText.textContent = officeExts.includes(ext) ? 'Calculating exact price...' : 'Finalizing...';
+
+                    // Step 3: Confirm upload with backend
+                    const confirmResponse = await fetch('/api/upload/confirm', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + authToken
+                        },
+                        body: JSON.stringify({
+                            ticket: ticket,
+                            filename: file.name,
+                            storage_filename: storage_filename,
+                            file_size: file.size,
+                            sender: sender,
+                            phone: phone,
+                            job_metadata: JSON.stringify(jobMetadata)
+                        })
+                    });
+
+                    if (!confirmResponse.ok) {
+                        const errorData = await confirmResponse.json();
+                        throw new Error(errorData.detail || 'Failed to confirm upload');
+                    }
+
+                    response = await confirmResponse.json();
+                }
+
+                progressFill.style.width = '100%';
+                progressText.textContent = 'Complete!';
+
+                // Add to cart
+                addToCart(response, jobMetadata, file);
+
+                // Reset form state
+                progressContainer.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('btn-loading');
+                fileDropZone.classList.remove('processing');
+                fileDropZone.classList.add('reset-flash');
+                setTimeout(() => fileDropZone.classList.remove('reset-flash'), 600);
+                animateButtonText(submitBtn, 'Add File');
+
+            } catch (error) {
+                showError(error.message || 'An error occurred');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('btn-loading');
+                fileDropZone.classList.remove('processing');
+                submitBtn.textContent = 'Add to Cart';
+                progressContainer.style.display = 'none';
+            }
+        });
+
+
+
+        // Razorpay Checkout Handler
+        async function openRazorpayCheckout(orderData, jobMetadata) {
+            // Mock Payment Mode (no razorpay_order_id means gateway not configured)
+            if (!orderData.razorpay_order_id) {
+                console.log("Mock Payment Mode");
+                const primaryTicket = cart.length > 0 ? cart[0].ticket : (orderData.ticket || (orderData.tickets ? orderData.tickets[0] : 'UNKNOWN'));
+
+                if (checkoutBtn) checkoutBtn.textContent = 'Processing (Mock)...';
+
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        try {
+                            console.log("Mock payment finishing, calling showSuccess");
+                            showSuccess(primaryTicket, { client_estimate_cents: orderData.amount_cents }, true);
+                        } catch (e) {
+                            console.error("Success display failed:", e);
+                            alert("Payment success! reloading...");
+                            location.reload();
+                        }
+                    }, 500);
+                });
+                return;
+            }
+
+            // Build Razorpay checkout options
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const options = {
+                key: orderData.razorpay_key_id,
+                amount: orderData.amount_cents, // in paise
+                currency: orderData.currency || 'INR',
+                name: 'Printpress',
+                description: `Order ${orderData.order_id}`,
+                order_id: orderData.razorpay_order_id,
+                prefill: {
+                    name: user.name || '',
+                    email: user.email || '',
+                    contact: user.phone || '',
+                },
+                theme: {
+                    color: '#6366f1' // Match app accent color
+                },
+                modal: {
+                    ondismiss: function () {
+                        // User closed the modal without paying
+                        console.log('Razorpay modal dismissed');
+                        localStorage.removeItem('pending_payment');
+                        const tickets = cart.map(item => item.ticket);
+                        revertPaymentToDraft(tickets);
+                        if (checkoutBtn) {
+                            checkoutBtn.disabled = false;
+                            checkoutBtn.classList.remove('btn-loading');
+                            checkoutBtn.textContent = 'Pay Now';
+                        }
+                        renderCart();
+                    }
+                },
+                handler: async function (response) {
+                    // Payment successful — Razorpay returns these 3 values
+                    const razorpay_payment_id = response.razorpay_payment_id;
+                    const razorpay_order_id = response.razorpay_order_id;
+                    const razorpay_signature = response.razorpay_signature;
+
+                    // CRITICAL: Clear cart from localStorage IMMEDIATELY.
+                    // Payment has already succeeded on Razorpay's side.
+                    // If user closes tab during verification, cart must not persist.
+                    clearCartStorage();
+
+                    // Switch to verification screen
+                    try {
+                        if (uploadFormView) uploadFormView.style.display = 'none';
+                        if (resultView) {
+                            resultView.style.display = 'flex';
+                            resultView.classList.remove('success');
+                        }
+                        const resultTitle = document.getElementById('resultTitle');
+                        const resultInstruction = document.getElementById('resultInstruction');
+                        const successCheckRing = document.querySelector('.success-check-ring');
+                        if (resultTitle) resultTitle.textContent = 'Verifying Payment...';
+                        if (resultInstruction) resultInstruction.textContent = 'Please wait while we confirm your payment.';
+                        if (ticketNumber) ticketNumber.textContent = '...';
+                        if (resultEstimate) resultEstimate.innerHTML = '';
+                        if (successCheckRing) successCheckRing.innerHTML = '<div class="verify-spinner"></div>';
+                        const newUploadBtnEl = document.getElementById('newUploadBtn');
+                        if (newUploadBtnEl) newUploadBtnEl.style.display = 'none';
+
+                        // Verify payment signature with backend
+                        const verifyRes = await fetch('/api/pay/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                order_id: orderData.order_id,
+                                razorpay_order_id: razorpay_order_id,
+                                razorpay_payment_id: razorpay_payment_id,
+                                razorpay_signature: razorpay_signature
+                            })
+                        });
+
+                        if (verifyRes && verifyRes.ok) {
+                            const verifyData = await verifyRes.json();
+                            const primaryTicket = cart.length > 0 ? cart[0].ticket : (orderData.ticket || 'OK');
+                            const totalAmount = orderData.amount_cents;
+                            if (successCheckRing) {
+                                successCheckRing.innerHTML = '';
+                                void successCheckRing.offsetWidth;
+                                successCheckRing.innerHTML = `
+                                    <svg class="success-checkmark" viewBox="0 0 52 52">
+                                        <circle class="success-check-circle" cx="26" cy="26" r="25" fill="none" />
+                                        <path class="success-check-path" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                                    </svg>`;
+                            }
+                            showSuccess(primaryTicket, { client_estimate_cents: totalAmount }, true);
+                        } else {
+                            const errData = verifyRes ? await verifyRes.json().catch(() => ({})) : {};
+                            if (resultTitle) resultTitle.textContent = 'Verification Issue';
+                            if (resultInstruction) resultInstruction.textContent = 'Payment received but verification took longer than expected. Your payment is safe — please refresh the page.';
+                            if (successCheckRing) successCheckRing.innerHTML = '<div style="font-size:3rem;">⚠️</div>';
+                            if (newUploadBtnEl) { newUploadBtnEl.style.display = ''; newUploadBtnEl.textContent = 'Go Back'; }
+                        }
+                    } catch (ackErr) {
+                        console.error("Payment verification failed:", ackErr);
+                        try {
+                            const primaryTicket = cart.length > 0 ? cart[0].ticket : 'OK';
+                            showSuccess(primaryTicket, { client_estimate_cents: orderData.amount_cents }, true);
+                        } catch (e2) {
+                            alert("Payment successful! Your order has been received. Please refresh the page.");
+                            location.reload();
+                        }
+                    }
+                }
+            };
+
+            try {
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', function (response) {
+                    console.error('Razorpay payment failed:', response.error);
+                    localStorage.removeItem('pending_payment');
+                    showError(`Payment failed: ${response.error.description || 'Unknown error'}`);
+                    const tickets = cart.map(item => item.ticket);
+                    revertPaymentToDraft(tickets);
+                    if (checkoutBtn) {
+                        checkoutBtn.disabled = false;
+                        checkoutBtn.classList.remove('btn-loading');
+                        checkoutBtn.textContent = 'Pay Now';
+                    }
+                    renderCart();
+                });
+                // Save pending payment info before opening checkout
+                // If user closes tab during verification, we can recover the ack page on reload
+                const primaryTicket = cart.length > 0 ? cart[0].ticket : (orderData.ticket || 'UNKNOWN');
+                localStorage.setItem('pending_payment', JSON.stringify({
+                    ticket: primaryTicket,
+                    amount_cents: orderData.amount_cents,
+                    order_id: orderData.order_id
+                }));
+                rzp.open();
+            } catch (err) {
+                console.error("Razorpay checkout exception:", err);
+                showError('Payment checkout failed. Please try again.');
+                const tickets = cart.map(item => item.ticket);
+                revertPaymentToDraft(tickets);
+                if (checkoutBtn) {
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.textContent = 'Pay Now';
+                }
+                renderCart();
+            }
+        }
+
+        // Helper: Extract 3-digit display ticket from full ticket
+        // e.g., '20260203-001' → '001', '20260203-010-2' → '010'
+        function getDisplayTicket(ticket) {
+            if (!ticket) return 'UNKNOWN';
+            if (ticket.includes('-')) {
+                const parts = ticket.split('-');
+                // Always return the second segment (the NNN main ticket number)
+                // Not the last segment, which could be a bulk sub-item suffix
+                return parts.length >= 2 ? parts[1] : parts[0];
+            }
+            return ticket;
+        }
+
+        function showSuccess(token, metadata, isPaid = true) {
+            console.log("showSuccess called", token, metadata);
+            try {
+                if (uploadFormView) uploadFormView.style.display = 'none';
+                if (resultView) {
+                    resultView.style.display = 'flex';
+                    resultView.classList.add('success');
+                }
+                // Display only 3-digit portion for easy customer reference
+                if (ticketNumber) ticketNumber.textContent = getDisplayTicket(token);
+
+                // Always ensure the checkmark SVG is shown (safety net)
+                const successCheckRing = document.querySelector('.success-check-ring');
+                if (successCheckRing) {
+                    const hasCheckmark = successCheckRing.querySelector('.success-checkmark');
+                    if (!hasCheckmark) {
+                        successCheckRing.innerHTML = '';
+                        void successCheckRing.offsetWidth;
+                        successCheckRing.innerHTML = `
+                            <svg class="success-checkmark" viewBox="0 0 52 52">
+                                <circle class="success-check-circle" cx="26" cy="26" r="25" fill="none" />
+                                <path class="success-check-path" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                            </svg>`;
+                    }
+                }
+
+                // Update title and instruction based on payment status
+                const resultTitle = document.getElementById('resultTitle');
+                const resultInstruction = document.getElementById('resultInstruction');
+
+                if (resultTitle && resultInstruction) {
+                    if (isPaid) {
+                        resultTitle.textContent = 'Payment Successful!';
+                        resultInstruction.textContent = 'Your documents will be ready shortly.';
+                    } else {
+                        resultTitle.textContent = 'Upload Successful!';
+                        resultInstruction.textContent = 'Show this at the counter for payment.';
+                    }
+                }
+
+                // Show estimate details safely
+                if (estimator && resultEstimate && metadata && metadata.client_estimate_cents !== undefined) {
+                    try {
+                        const estimate = estimator.formatPrice(metadata.client_estimate_cents);
+                        resultEstimate.innerHTML = `Total Paid: <strong>${estimate}</strong>`;
+                    } catch (e) { console.error("Format price error:", e); }
+                }
+
+                // Hide cart bar
+                // if (checkoutBar) checkoutBar.classList.remove('visible'); 
+                if (document.body) document.body.classList.remove('has-cart');
+
+                cart = [];
+                renderCart();
+                clearCartStorage();
+                localStorage.removeItem('pending_payment');
+
+                // Show Home button after success
+                const newUploadBtnEl = document.getElementById('newUploadBtn');
+                if (newUploadBtnEl) {
+                    newUploadBtnEl.style.display = '';
+                    newUploadBtnEl.textContent = 'Home';
+                }
+            } catch (err) {
+                console.error("Critical error in showSuccess:", err);
+                alert("Payment successful! Please refresh page to see order number.");
+            }
+        }
+
+        // --- Cart Functions ---
+
+        // Create Pagination Elements container
+        const cartPagination = document.createElement('div');
+        cartPagination.className = 'cart-pagination';
+        cartContainer.appendChild(cartPagination);
+
+        // Track scroll for dots
+        cartItemsEl.addEventListener('scroll', updateDots);
+
+        // Add Drag-to-Scroll (Swipe) support for Desktop/Mouse
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        cartItemsEl.addEventListener('mousedown', (e) => {
+            isDown = true;
+            cartItemsEl.style.cursor = 'grabbing';
+            startX = e.pageX - cartItemsEl.offsetLeft;
+            scrollLeft = cartItemsEl.scrollLeft;
+            // Disable snap temporarily while dragging for smoothness
+            cartItemsEl.style.scrollSnapType = 'none';
+        });
+
+        cartItemsEl.addEventListener('mouseleave', () => {
+            isDown = false;
+            cartItemsEl.style.cursor = 'grab';
+            cartItemsEl.style.scrollSnapType = 'x mandatory';
+        });
+
+        cartItemsEl.addEventListener('mouseup', () => {
+            isDown = false;
+            cartItemsEl.style.cursor = 'grab';
+            cartItemsEl.style.scrollSnapType = 'x mandatory';
+        });
+
+        cartItemsEl.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - cartItemsEl.offsetLeft;
+            const walk = (x - startX) * 2; // Scroll-fast
+            cartItemsEl.scrollLeft = scrollLeft - walk;
+        });
+
+        // Touch events are handled natively by overflow-x: auto, 
+        // but ensuring snap behavior is correct.
+
+        function updateDots() {
+            const width = cartItemsEl.offsetWidth;
+            const scroll = cartItemsEl.scrollLeft;
+            const index = Math.round(scroll / width);
+
+            document.querySelectorAll('.cart-dot').forEach((dot, i) => {
+                if (i === index) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        function getFileType(filename) {
+            const ext = (filename || '').split('.').pop().toLowerCase();
+            if (ext === 'pdf') return 'pdf';
+            if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(ext)) return 'image';
+            if (['doc', 'docx'].includes(ext)) return 'word';
+            if (['xls', 'xlsx'].includes(ext)) return 'excel';
+            if (['ppt', 'pptx'].includes(ext)) return 'ppt';
+            return 'other';
+        }
+
+        function addToCart(jobData, metadata, fileObj) {
+            let preview = null;
+            const fname = fileObj.name || fileObj;
+            let type = getFileType(fname);
+
+            // Generate preview URL if image
+            if (fileObj && fileObj.type && fileObj.type.startsWith('image/')) {
+                preview = URL.createObjectURL(fileObj);
+                type = 'image';
+            }
+
+            cart.push({
+                ticket: jobData.ticket,
+                token: jobData.token,
+                filename: fname,
+                metadata: metadata,
+                price_cents: jobData.amount_cents || jobData.estimate_cents || metadata.client_estimate_cents || 0,
+                preview: preview,
+                type: type
+            });
+            renderCart();
+            saveCartToStorage();
+            resetForm();
+
+            // Show toast
+            const toast = document.createElement('div');
+            toast.textContent = "Added to order";
+            toast.style.position = "fixed";
+            toast.style.bottom = "80px";
+            toast.style.left = "50%";
+            toast.style.transform = "translateX(-50%)";
+            toast.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+            toast.style.color = getComputedStyle(document.documentElement).getPropertyValue('--accent-on').trim();
+            toast.style.padding = "10px 20px";
+            toast.style.borderRadius = "20px";
+            toast.style.zIndex = "3000";
+            toast.style.opacity = "0";
+            toast.style.transition = "opacity 0.3s";
+            document.body.appendChild(toast);
+
+            requestAnimationFrame(() => toast.style.opacity = "1");
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        function renderCart() {
+            cartItemsEl.innerHTML = '';
+
+            if (cart.length === 0) {
+                cartContainer.style.display = 'none';
+                if (checkoutBtn) {
+                    checkoutBtn.style.display = 'none';
+                    checkoutBtn.disabled = true;
+                }
+                document.body.classList.remove('has-cart');
+                cartCountBadge.textContent = '0 Items';
+                return;
+            }
+
+            cartContainer.style.display = 'block';
+            if (checkoutBtn) {
+                checkoutBtn.style.display = 'flex'; // or inline-flex/block
+                checkoutBtn.style.justifyContent = 'center';
+                checkoutBtn.style.alignItems = 'center';
+                checkoutBtn.style.gap = '8px';
+            }
+            document.body.classList.add('has-cart');
+            cartCountBadge.textContent = `${cart.length} Item${cart.length > 1 ? 's' : ''}`;
+
+            // Reset Checkout Button State (Fix for stuck "Processing")
+            if (checkoutBtn) {
+                checkoutBtn.disabled = false;
+                checkoutBtn.innerHTML = `
+            Pay Now
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>`;
+            }
+
+            let totalCents = 0;
+
+            // Render Items
+            cart.forEach((item, index) => {
+                totalCents += item.price_cents;
+
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+
+                // Specs summary
+                const specs = [];
+                if (item.metadata.color_mode === 'color') specs.push('Color'); else specs.push('B&W');
+                specs.push(item.metadata.duplex ? 'Double Side' : 'Single Side');
+                specs.push(`${item.metadata.copies} cop${item.metadata.copies > 1 ? 'ies' : 'y'}`);
+                if (item.metadata.page_list && item.metadata.page_list.length) {
+                    specs.push(`${item.metadata.page_list.length} pg${item.metadata.page_list.length > 1 ? 's' : ''}`);
+                }
+                if (item.metadata.paper_size && item.metadata.paper_size !== 'A4') specs.push(item.metadata.paper_size);
+                if (item.metadata.binding && item.metadata.binding !== 'none') specs.push(item.metadata.binding.charAt(0).toUpperCase() + item.metadata.binding.slice(1));
+
+                const itemPrice = estimator.formatPrice(item.price_cents);
+
+                // Preview Content
+                let previewHtml = '';
+                // Detect type from filename if not set or if it was defaulted to 'pdf'
+                const fileType = item.type || getFileType(item.filename);
+                if (fileType === 'image' && item.preview) {
+                    previewHtml = `<div class="cart-item-preview"><img src="${item.preview}" alt="Preview"></div>`;
+                } else if (fileType === 'image') {
+                    // Image without preview (restored from localStorage)
+                    previewHtml = `
+                    <div class="cart-item-preview pdf-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <span>Image</span>
+                    </div>`;
+                } else if (fileType === 'word') {
+                    previewHtml = `
+                    <div class="cart-item-preview pdf-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4285f4" stroke-width="1.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="8" y1="13" x2="16" y2="13"></line>
+                            <line x1="8" y1="17" x2="14" y2="17"></line>
+                        </svg>
+                        <span>Word Document</span>
+                    </div>`;
+                } else if (fileType === 'pdf') {
+                    previewHtml = `
+                    <div class="cart-item-preview pdf-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <span>PDF Document</span>
+                    </div>`;
+                } else {
+                    // Generic document icon
+                    previewHtml = `
+                    <div class="cart-item-preview pdf-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <span>Document</span>
+                    </div>`;
+                }
+
+                div.innerHTML = `
+                    ${previewHtml}
+                    <div class="cart-item-remove" onclick="removeFromCart(${index})">×</div>
+                    <div class="cart-item-details">
+                        <div class="cart-item-info">
+                            <div class="cart-item-name">${item.filename}</div>
+                            <div class="cart-item-specs">${specs.join(' • ')}</div>
+                        </div>
+                        <div class="cart-item-price">${itemPrice}</div>
+                    </div>
+                `;
+
+                cartItemsEl.appendChild(div);
+            });
+
+            // Update Pagination Dots
+            cartPagination.innerHTML = '';
+            if (cart.length > 1) {
+                cart.forEach((_, i) => {
+                    const dot = document.createElement('div');
+                    dot.className = `cart-dot ${i === 0 ? 'active' : ''}`;
+                    cartPagination.appendChild(dot);
+                });
+            }
+
+            const totalFormatted = estimator.formatPrice(totalCents);
+            // Update button text to include price
+            if (checkoutBtn) {
+                checkoutBtn.innerHTML = `
+                    Pay ${totalFormatted}
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>`;
+            }
+        }
+
+        window.removeFromCart = async function (index) {
+            if (confirm('Remove this file from order?')) {
+                const item = cart[index];
+                // Cancel draft job on backend (deletes Supabase file + DB record)
+                try {
+                    await fetch(`/api/jobs/${item.ticket}/cancel-draft`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    });
+                } catch (e) {
+                    console.warn('Failed to cancel draft:', e);
+                }
+                cart.splice(index, 1);
+                renderCart();
+                saveCartToStorage();
+                // Animate button back to 'Add to Cart' if cart is empty
+                if (cart.length === 0) {
+                    animateButtonText(submitBtn, 'Add to Cart');
+                }
+            }
+        };
+
+        function resetForm() {
+            // Clear File
+            fileInput.value = '';
+            // Don't clear name/email/phone as they are needed for session
+
+            fileName.textContent = '';
+            fileNameWrapper.classList.remove('visible');
+            fileDropZone.classList.remove('has-file');
+
+            // Reset PDF Preview
+            pdfPreviewSection.style.display = 'none';
+            if (pdfPreview) pdfPreview.clear();
+
+            // Hide price warning
+            priceWarning.style.display = 'none';
+            isEstimated = false;
+
+            // Reset Options to Defaults
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.value === 'bw' || btn.dataset.value === 'false') {
+                    btn.classList.add('active');
+                }
+            });
+            document.getElementById('paperSize').value = 'A4';
+            document.getElementById('binding').value = 'none';
+            document.getElementById('copies').value = '1';
+            // Reset custom dropdowns visual
+            var psLabel = document.getElementById('paperSizeLabel');
+            if (psLabel) psLabel.textContent = 'A4 (Standard)';
+            document.querySelectorAll('#paperSizeOptions .custom-select-option').forEach(function (o) {
+                o.classList.toggle('selected', o.dataset.value === 'A4');
+            });
+            var bdLabel = document.getElementById('bindingLabel');
+            if (bdLabel) bdLabel.textContent = 'No Binding';
+            document.querySelectorAll('#bindingOptions .custom-select-option').forEach(function (o) {
+                o.classList.toggle('selected', o.dataset.value === 'none');
+            });
+
+            // Trigger events
+            estimator.setOption('paperSize', 'A4');
+            estimator.setOption('binding', 'none');
+            estimator.setOption('copies', 1);
+            estimator.setOption('colorMode', 'bw');
+            estimator.setOption('duplex', false);
+            estimator.setPageCount(0);
+            updateDuplexAvailability(0);
+
+            priceAmount.textContent = '₹0.00';
+            priceBreakdown.textContent = '';
+
+            submitBtn.textContent = cart.length > 0 ? 'Add File' : 'Add to Cart';
+            submitBtn.classList.toggle('btn-add-file', cart.length > 0);
+        }
+
+        // Smooth morph animation for button text changes
+        function animateButtonText(btn, newText) {
+            if (btn.textContent.trim() === newText) return;
+            btn.classList.remove('btn-morph-in');
+            btn.classList.add('btn-morph-out');
+            btn.addEventListener('animationend', function handler() {
+                btn.removeEventListener('animationend', handler);
+                btn.textContent = newText;
+                // Toggle color state
+                btn.classList.toggle('btn-add-file', newText === 'Add File');
+                btn.classList.remove('btn-morph-out');
+                btn.classList.add('btn-morph-in');
+                btn.addEventListener('animationend', function handler2() {
+                    btn.removeEventListener('animationend', handler2);
+                    btn.classList.remove('btn-morph-in');
+                }, { once: true });
+            }, { once: true });
+        }
+
+        // Convert technical error messages to user-friendly ones
+        function friendlyError(msg) {
+            if (!msg) return 'Something went wrong. Please try again.';
+            const m = msg.toLowerCase();
+            // Upload errors
+            if (m.includes('drive upload failed') || m.includes('failed to upload file to google drive'))
+                return 'Upload didn\u2019t go through. Please try again.';
+            if (m.includes('network error during drive upload') || m.includes('network error during upload'))
+                return 'Connection lost. Please check your internet and try again.';
+            if (m.includes('upload to storage failed') || m.includes('failed to confirm upload') || m.includes('failed to upload file to storage'))
+                return 'Upload didn\u2019t go through. Please try again.';
+            if (m.includes('failed to prepare upload') || m.includes('failed to create upload url'))
+                return 'Something went wrong. Please try again.';
+            if (m.includes('invalid server response'))
+                return 'Something went wrong. Please try again.';
+            // Cart / stale errors
+            if (m.includes('stale items') || m.includes('stale') || m.includes('may have expired') || m.includes('no uploaded file'))
+                return 'Your cart has expired. Please remove the items and re-upload.';
+            // Payment errors
+            if (m.includes('payment creation failed') || m.includes('failed to create payment') || m.includes('failed to create razorpay'))
+                return 'Couldn\u2019t start payment. Please try again.';
+            if (m.includes('payment failed'))
+                return 'Payment didn\u2019t go through. Please try again.';
+            if (m.includes('payment checkout failed'))
+                return 'Couldn\u2019t open payment. Please try again.';
+            if (m.includes('payment signature verification failed') || m.includes('invalid signature'))
+                return 'Payment verification issue. Your money is safe \u2014 please refresh.';
+            // Timeout
+            if (m.includes('request timed out') || m.includes('timed out'))
+                return 'Taking too long. Please check your internet and try again.';
+            // Storage
+            if (m.includes('insufficient storage') || m.includes('server is full'))
+                return 'Server is full. Please try again later.';
+            // Google Drive access
+            if (m.includes('google drive access required'))
+                return 'Please sign in with Google to upload files.';
+            if (m.includes('failed to access google drive folder'))
+                return 'Couldn\u2019t connect to Google Drive. Please sign out and sign in again.';
+            if (m.includes('credentials unavailable') || m.includes('drive credentials'))
+                return 'Session expired. Please sign out and sign in again.';
+            // Job not found
+            if (m.includes('job not found') || m.includes('some jobs not found'))
+                return 'Order not found. Please refresh and try again.';
+            // File errors
+            if (m.includes('empty file'))
+                return 'The file is empty. Please choose a different file.';
+            // Server errors
+            if (m.includes('internal server error'))
+                return 'Something went wrong on our end. Please try again.';
+            // Return original if it's already user-friendly (short, no technical jargon)
+            return msg;
+        }
+
+        let _errorDismissTimer = null;
+        function showError(message) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Add to Cart';
+            submitBtn.classList.remove('btn-add-file', 'btn-loading');
+            fileDropZone.classList.remove('processing');
+            progressContainer.style.display = 'none';
+            errorMessage.textContent = friendlyError(message);
+            errorMessage.classList.remove('fading');
+            errorMessage.style.display = 'block';
+
+            // Auto-dismiss after 8 seconds
+            if (_errorDismissTimer) clearTimeout(_errorDismissTimer);
+            _errorDismissTimer = setTimeout(() => {
+                errorMessage.classList.add('fading');
+                setTimeout(() => { errorMessage.style.display = 'none'; errorMessage.classList.remove('fading'); }, 400);
+            }, 8000);
+        }
+
+        // Click-to-dismiss error
+        errorMessage.addEventListener('click', () => {
+            if (_errorDismissTimer) clearTimeout(_errorDismissTimer);
+            errorMessage.classList.add('fading');
+            setTimeout(() => { errorMessage.style.display = 'none'; errorMessage.classList.remove('fading'); }, 400);
+        });
+
+        // Checkout Button Listener
+        checkoutBtn.addEventListener('click', async () => {
+            if (cart.length === 0) return;
+
+            const originalText = checkoutBtn.innerHTML;
+            checkoutBtn.disabled = true;
+            checkoutBtn.classList.add('btn-loading');
+
+            // Safety timeout: if fetch hangs for 30s, re-enable the button
+            const safetyTimeout = setTimeout(() => {
+                if (checkoutBtn.disabled && checkoutBtn.classList.contains('btn-loading')) {
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.classList.remove('btn-loading');
+                    checkoutBtn.innerHTML = originalText;
+                    showError('Request timed out. Please check your connection and try again.');
+                }
+            }, 30000);
+
+            try {
+                // Get user info from localStorage
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                const userInfo = {
+                    sender: user.name || (sessionStorage.getItem('guest_mode') === '1' ? `Guest (${(document.getElementById('guestName') || {}).value || ''})` : 'Guest'),
+                    email: user.email || '',
+                    phone: user.phone || ''
+                };
+
+                const tickets = cart.map(item => item.ticket);
+
+                const response = await fetch('/api/payment/create-bulk-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify({
+                        tickets: tickets,
+                        ...userInfo
+                    })
+                });
+
+                clearTimeout(safetyTimeout);
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    // Open Razorpay Checkout (Real or Mock)
+                    await openRazorpayCheckout(data, {});
+                } else {
+                    // Extract error message - handle Pydantic validation errors (detail is array)
+                    let errMsg = 'Payment creation failed';
+                    if (typeof data.detail === 'string') {
+                        errMsg = data.detail;
+                    } else if (Array.isArray(data.detail)) {
+                        errMsg = data.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+                    } else if (data.message) {
+                        errMsg = data.message;
+                    }
+                    throw new Error(errMsg);
+                }
+
+            } catch (error) {
+                clearTimeout(safetyTimeout);
+                console.error(error);
+                showError(error.message);
+                checkoutBtn.disabled = false;
+                checkoutBtn.classList.remove('btn-loading');
+                checkoutBtn.innerHTML = originalText;
+            }
+        });
+
+        newUploadBtn.addEventListener('click', () => {
+            resetForm();
+            cart = [];
+            renderCart();
+
+            // Show form, hide result
+            uploadFormView.style.display = 'block';
+            resultView.style.display = 'none';
+            resultView.classList.remove('success');
+
+            // Also retain user info? Yes, resetForm does that.
+        });
+
+        // ============== Authentication State ==============
+        const userSection = document.getElementById('userSection');
+        const authBtn = document.getElementById('authBtn');
+
+        // Check and display auth state
+        async function updateAuthUI() {
+            let user = null;
+            let token = localStorage.getItem('access_token');
+            const userStr = localStorage.getItem('user');
+
+            // If we have local data, use it
+            if (userStr) {
+                try {
+                    user = JSON.parse(userStr);
+                } catch (e) { /* ignore */ }
+            }
+
+            // If no local data but we are here (meaning cookie worked), fetch it
+            if (!user) {
+                try {
+                    const res = await fetch('/api/auth/me');
+                    if (res.ok) {
+                        user = await res.json();
+                        localStorage.setItem('user', JSON.stringify(user));
+                        // Note: we can't extract the token here easily if it's httpOnly cookie, 
+                        // but requests relying on cookie will work.
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch user profile", e);
+                }
+            }
+
+            if (user) {
+                const initials = (user.name || user.email || '?')
+                    .split(' ')
+                    .map(n => n[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase();
+
+                userSection.innerHTML = `
+                        <div class="user-dropdown" id="userDropdown">
+                            <button class="user-btn" id="userDropdownBtn">
+                                <span class="user-avatar">${initials}</span>
+                                <span>${user.name || user.email}</span>
+                            </button>
+                            <div class="user-dropdown-menu">
+                                ${user.email ? `<div style="padding:8px 16px;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${user.email}</div>` : ''}
+                                <a href="/history" class="user-dropdown-item">My History</a>
+                                <div class="user-dropdown-item theme-toggle" id="themeToggleBtn" onclick="toggleTheme(event);">
+                                    <span class="theme-toggle-text">${getTheme() === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                                    <div class="theme-switch">
+                                        <div class="theme-switch-track ${getTheme() === 'light' ? 'active' : ''}">
+                                            <div class="theme-switch-thumb"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <a href="#" class="user-dropdown-item" id="installAppBtn" style="display:none;" onclick="installApp(event)">Install App</a>
+                                <a href="#" class="user-dropdown-item logout" id="logoutBtn">Logout</a>
+                            </div>
+                        </div>
+                    `;
+
+                // Setup dropdown toggle
+                const dropdown = document.getElementById('userDropdown');
+                const dropdownBtn = document.getElementById('userDropdownBtn');
+
+                dropdownBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    dropdown.classList.toggle('open');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!dropdown.contains(e.target)) {
+                        dropdown.classList.remove('open');
+                    }
+                });
+
+                // Logout handler
+                document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+                    e.preventDefault();
+
+                    // Cancel all draft jobs in cart (deletes files from Supabase/Drive)
+                    if (cart.length > 0) {
+                        const headers = getAuthHeaders();
+                        await Promise.allSettled(
+                            cart.map(item =>
+                                fetch(`/api/jobs/${item.ticket}/cancel-draft`, {
+                                    method: 'DELETE',
+                                    headers: headers
+                                }).catch(() => { })
+                            )
+                        );
+                    }
+
+                    // Call server logout to clear cookie
+                    try {
+                        await fetch('/api/auth/logout', { method: 'POST' });
+                    } catch (err) { console.error(err); }
+
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user');
+                    clearCartStorage();
+                    cart = [];
+                    window.location.reload(); // Will redirect to login
+                });
+
+                // User name and email are now sourced directly from localStorage
+                // No need to pre-fill form fields
+            }
+        }
+
+        // Call it immediately
+        updateAuthUI();
+
+        // === Back Navigation Guard ===
+        // Prevent back button from going to Google OAuth pages after sign-in.
+        // Only active for signed-in users. Pressing back stays on the upload page.
+        if (localStorage.getItem('user') || localStorage.getItem('access_token')) {
+            // Clean URL (remove any OAuth params in URL)
+            if (window.location.search) {
+                history.replaceState(null, '', window.location.pathname);
+            }
+            // Push a guard entry
+            history.pushState({ guard: true }, '');
+            window.addEventListener('popstate', function (e) {
+                // When back is pressed, push another guard entry to stay on this page
+                if (localStorage.getItem('user') || localStorage.getItem('access_token')) {
+                    history.pushState({ guard: true }, '');
+                }
+            });
+        }
+
+        // Get auth headers for API calls
+        function getAuthHeaders() {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                return { 'Authorization': 'Bearer ' + token };
+            }
+            return {};
+        }
+
+        // Guest mode: hide nav and profile, show sign-in hint
+        (async function initGuestMode() {
+            // First, check if user is actually authenticated (via cookie or token)
+            let isAuthenticated = !!localStorage.getItem('access_token') || !!localStorage.getItem('user');
+
+            // Also check via API (cookie-based auth may not be in localStorage)
+            if (!isAuthenticated) {
+                try {
+                    const res = await fetch('/api/auth/me');
+                    if (res.ok) {
+                        const userData = await res.json();
+                        if (userData && userData.id) {
+                            isAuthenticated = true;
+                            // Store for future checks
+                            localStorage.setItem('user', JSON.stringify(userData));
+                        }
+                    }
+                } catch (e) { /* Not authenticated */ }
+            }
+
+            // If user is logged in AND not explicitly requesting guest mode, clear guest mode
+            const explicitGuest = new URLSearchParams(window.location.search).get('guest') === '1';
+            if (isAuthenticated && !explicitGuest) {
+                sessionStorage.removeItem('guest_mode');
+                // Ensure guest name field is hidden
+                const guestNameGroup = document.getElementById('guestNameGroup');
+                if (guestNameGroup) guestNameGroup.style.display = 'none';
+
+                // Add authenticated class to show nav
+                document.body.classList.add('is-authenticated');
+                // Reveal page
+                document.querySelector('.container').classList.add('loaded');
+                return;
+            }
+
+            const isSessionGuest = sessionStorage.getItem('guest_mode') === '1';
+
+            const isGuest = explicitGuest || isSessionGuest || !isAuthenticated;
+
+            if (isGuest) {
+                if (explicitGuest || isSessionGuest) sessionStorage.setItem('guest_mode', '1');
+                document.body.classList.remove('is-authenticated');
+                const guestNameGroup = document.getElementById('guestNameGroup');
+                if (guestNameGroup) guestNameGroup.style.display = 'block';
+                if (userSection) userSection.innerHTML = `
+                    <a href="/login" style="color:var(--text-muted);font-size:13px;text-decoration:none;">
+                        Sign in for history →
+                    </a>`;
+            } else {
+                document.body.classList.add('is-authenticated');
+                updateAuthUI();
+            }
+            // Reveal page after auth is resolved
+            document.querySelector('.container').classList.add('loaded');
+        })();
+    </script>
+    <!-- Floating Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item active" title="Home">
+            <svg viewBox="0 0 24 24">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+        </a>
+        <a href="/history" class="nav-item" title="History">
+            <svg viewBox="0 0 24 24">
+                <path
+                    d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
+            </svg>
+        </a>
+    </nav>
+
+    <!-- PWA Install Prompt -->
+    <script>
+        // Register Service Worker (required for PWA install prompt)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/service-worker.js');
+                    console.log('Service Worker registered:', registration.scope);
+                } catch (error) {
+                    console.log('Service Worker registration failed:', error);
+                }
+            });
+        }
+
+        let deferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Show the install button in dropdown (may not exist yet)
+            const btn = document.getElementById('installAppBtn');
+            if (btn) btn.style.display = '';
+        });
+
+        function installApp(e) {
+            e.preventDefault();
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((result) => {
+                if (result.outcome === 'accepted') {
+                    const btn = document.getElementById('installAppBtn');
+                    if (btn) btn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
+        }
+
+        // Hide install button if already installed as PWA
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+            window.addEventListener('DOMContentLoaded', () => {
+                const btn = document.getElementById('installAppBtn');
+                if (btn) btn.style.display = 'none';
+            });
+        }
+
+        // Re-check install button visibility after dropdown is created
+        // (handles case where beforeinstallprompt fired before dropdown existed)
+        const _origUpdateAuthUI = typeof updateAuthUI === 'function' ? updateAuthUI : null;
+        if (_origUpdateAuthUI) {
+            const _wrappedUpdateAuthUI = async function() {
+                await _origUpdateAuthUI();
+                // After dropdown is created, show install button if prompt is available
+                if (deferredPrompt) {
+                    const btn = document.getElementById('installAppBtn');
+                    if (btn) btn.style.display = '';
+                }
+            };
+            // Replace the call
+            _wrappedUpdateAuthUI();
+        }
+    </script>
+
+    <script src="/js/swipe-nav.js"></script>
+</body>
+
+</html>
